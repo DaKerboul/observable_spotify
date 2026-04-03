@@ -22,6 +22,9 @@ export default {
   // The path to the source root.
   root: "src",
 
+  // Base path for GitHub Pages deployment (repo name = observable_spotify)
+  base: "/observable_spotify/",
+
   // Some additional configuration options and their defaults:
   // theme: "default", // try "light", "dark", "slate", etc.
   // header: "", // what to show in the header (HTML)
