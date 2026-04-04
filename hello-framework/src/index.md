@@ -40,7 +40,49 @@ toc: false
   line-height: 1.5;
   color: var(--theme-foreground-muted);
 }
+
+.nav-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin: 0 0 3rem;
+}
+.nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 28px;
+  border-radius: 12px;
+  text-decoration: none;
+  background: var(--theme-background-alt);
+  border: 2px solid transparent;
+  transition: border-color .15s, box-shadow .15s;
+  font-family: var(--sans-serif);
+  min-width: 200px;
+  max-width: 280px;
+}
+.nav-card:hover {
+  border-color: #1DB954;
+  box-shadow: 0 4px 18px #1DB95422;
+}
+.nav-card-icon { font-size: 2rem; }
+.nav-card-title { font-weight: 700; font-size: 1.05rem; color: var(--theme-foreground); }
+.nav-card-desc  { font-size: 0.82rem; color: var(--theme-foreground-muted); }
 </style>
+
+<div class="nav-cards">
+  <a class="nav-card" href="./">
+    <span class="nav-card-icon">📊</span>
+    <span class="nav-card-title">Spotify Analytics</span>
+    <span class="nav-card-desc">Genres musicaux, évolution, tendances par langue</span>
+  </a>
+  <a class="nav-card" href="./history-of-music">
+    <span class="nav-card-icon">🎵</span>
+    <span class="nav-card-title">History of Music</span>
+    <span class="nav-card-desc">Évolution des genres par langue et par période · stacked area + pie</span>
+  </a>
+</div>
 
 ## Genres musicaux
 
