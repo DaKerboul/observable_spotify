@@ -350,7 +350,8 @@ display(svg);
 ```js
 const leg=document.createElement("div");
 leg.style.cssText="margin-top:8px;font-family:var(--sans-serif);font-size:11px;display:flex;flex-direction:column;gap:3px;";
-langPieData.forEach(d=>{
+// arcs has pct; langPieData does not — iterate arcs for the legend
+arcs.forEach(d=>{
   const row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;gap:6px;";
   const dot=document.createElement("span");
   dot.style.cssText=`width:10px;height:10px;border-radius:2px;background:${d.color};flex-shrink:0;opacity:${selectedLangs.includes(d.lang)?1:0.3};`;
@@ -380,7 +381,7 @@ if(sorted.length>0){
     {k:"Langues",v:selectedLangs.map(getLang).join(", ")||"—"},
     {k:"Période",v:`${yearRange[0]} – ${yearRange[1]}`},
     {k:"Genre dominant",v:sorted[0][0]},
-    {k:"Part dom.",v:(sorted[0][1]/totalSel*100).toFixed(1)+" %"},
+    {k:"Part dom.",v:totalSel>0 ? (sorted[0][1]/totalSel*100).toFixed(1)+" %" : "—"},
     {k:"Titres (dom.)",v:sorted[0][1].toLocaleString()},
     {k:"Total titres",v:totalSel.toLocaleString()},
   ].forEach(({k,v})=>{
@@ -399,7 +400,8 @@ if(sorted.length>0){
     const nm=document.createElement("span"); nm.style.cssText="min-width:120px;"; nm.textContent=g;
     const bw=document.createElement("div"); bw.style.cssText="flex:1;background:#eee;border-radius:3px;height:8px;overflow:hidden;";
     const b=document.createElement("div");
-    b.style.cssText=`width:${(cnt/sorted[0][1]*100).toFixed(1)}%;height:100%;background:${gColor[g]??palette[i%palette.length]};border-radius:3px;`;
+    const barPct = sorted[0][1] > 0 ? (cnt/sorted[0][1]*100).toFixed(1) : "0";
+    b.style.cssText=`width:${barPct}%;height:100%;background:${gColor[g]??palette[i%palette.length]};border-radius:3px;`;
     bw.appendChild(b);
     const cs=document.createElement("span"); cs.style.cssText="min-width:55px;text-align:right;color:var(--theme-foreground-muted);"; cs.textContent=cnt.toLocaleString();
     row.append(nm,bw,cs); barDiv.appendChild(row);

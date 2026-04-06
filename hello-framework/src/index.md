@@ -126,15 +126,16 @@ const langYear  = await FileAttachment("data/language_year.json").json();
 
 ```js
 // KPI computations
-const totalTracks = d3.sum(
-  [...d3.rollup(genreYear, v => d3.max(v, d => +d.track_count), d => d.genre + "|" + d.release_year).values()]
-);
+// Use langYear for total tracks (one language per track = no double-counting)
+const totalTracks = d3.sum(langYear, d => +d.track_count);
 
 const byGenre = d3.rollup(genreYear, v => d3.sum(v, d => +d.track_count), d => d.genre);
-const topGenre = [...byGenre.entries()].sort((a,b) => b[1]-a[1])[0];
+const genreEntries = [...byGenre.entries()].sort((a,b) => b[1]-a[1]);
+const topGenre = genreEntries[0] ?? ["—", 0];
 
 const byLang = d3.rollup(langYear, v => d3.sum(v, d => +d.track_count), d => d.language_code);
-const topLang = [...byLang.entries()].sort((a,b) => b[1]-a[1])[0];
+const langEntries = [...byLang.entries()].sort((a,b) => b[1]-a[1]);
+const topLang = langEntries[0] ?? ["—", 0];
 
 const yearRange = d3.extent(genreYear, d => +d.release_year);
 
