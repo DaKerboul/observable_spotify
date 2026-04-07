@@ -93,6 +93,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one feature-year value for the global catalog. Mark used = line chart, chosen because it best reveals continuity and long-term trends in time series. Visual variables: x-position maps year, y-position maps feature value (0-1), and color hue maps feature name.*
+
 </div>
 
 <div class="chart-card">
@@ -124,6 +126,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one feature-year value for speechiness/instrumentalness/liveness. Mark used = line chart, chosen because it makes it easy to compare smooth temporal evolutions across multiple features. Visual variables: x-position maps year, y-position maps feature value, and color hue maps feature.*
+
 </div>
 
 <div class="chart-card">
@@ -148,6 +152,8 @@ display(Plot.plot({
   ]
 }));
 ```
+
+*Encoding note (rough): data item = one year aggregate for tempo. Marks used = line + dots + reference rule, chosen because the line shows continuity, dots confirm discrete yearly observations, and the rule provides a stable benchmark for interpretation. Visual variables: x-position maps year, y-position maps tempo in BPM, color highlights tempo series, and dashed rule gives a baseline at 120 BPM.*
 
 </div>
 
@@ -189,6 +195,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one genre aggregate. Mark used = bubble scatterplot with labels, chosen because scatterplots show relationships between two quantitative dimensions while bubble size adds a third quantitative variable. Visual variables: x-position maps danceability, y-position maps energy, bubble size maps track volume, and color hue maps genre.*
+
 </div>
 
 <div class="chart-card">
@@ -218,6 +226,8 @@ display(Plot.plot({
   ]
 }));
 ```
+
+*Encoding note (rough): data item = one genre aggregate. Mark used = bubble scatterplot with labels and quadrant rules, chosen to compare two continuous variables while using guide rules to quickly separate interpretive zones. Visual variables: x-position maps acousticness, y-position maps valence, bubble size maps track volume, and color hue maps genre.*
 
 </div>
 
@@ -303,6 +313,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one language-year record for the selected feature. Mark used = multi-series line chart, chosen because it supports direct comparison of temporal trajectories between languages. Visual variables: x-position maps year, y-position maps selected feature value, and color hue maps language.*
+
 </div>
 
 ## Profil radar par genre (top 8)
@@ -383,3 +395,5 @@ radarGenres.forEach((g,i)=>{
 
 display(svg);
 ```
+
+*Encoding note (rough): data item = one genre profile across several audio features. Mark used = radar polygons (custom SVG), chosen because it gives an at-a-glance shape profile for multivariate comparison across genres. Visual variables: radial distance maps feature value (0-1), angle maps feature dimension, and color hue maps genre.*

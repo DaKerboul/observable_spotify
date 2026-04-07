@@ -266,6 +266,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one genre-year aggregate after filters. Mark used = stacked area, chosen because it combines temporal continuity with part-to-whole composition in a single view. Visual variables: x-position maps year, y-height maps track count (or share when normalized), and color hue maps genre.*
+
 </div>
 <div class="hom-card">
 <h3>② Langues · cliquer les segments pour sélectionner · ${yearRange[0]}–${yearRange[1]}</h3>
@@ -396,6 +398,8 @@ display(Plot.plot({
 }
 ```
 
+*Encoding note (rough): data item = one language aggregate in the selected period. Mark used = radial ring segments (custom SVG, CD metaphor), chosen to match the music theme and to let users compare composition shares while directly interacting with language segments. Visual variables: angular span maps share/volume, hue maps language, and opacity indicates selected vs non-selected languages.*
+
 </div>
 </div>
 
@@ -446,6 +450,8 @@ if(sorted.length>0){
 }
 ```
 
+*Encoding note (rough): data item = one genre aggregate in the current selection. Mark used = inline horizontal bars in an HTML table-like list, chosen because bars make rank and magnitude comparison immediate in compact summary space. Visual variables: bar length maps relative volume versus the top genre, text labels carry exact counts, and bar color maps genre.*
+
 </div>
 
 ## Durée moyenne par langue
@@ -482,3 +488,5 @@ grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:16px;";
 grid.append(durChart);
 display(grid);
 ```
+
+*Encoding note (rough): data item = one language-year record. Mark used = multi-series line + dots, chosen because lines emphasize continuous evolution and dots keep individual yearly observations readable. Visual variables: x-position maps year, y-position maps average duration (minutes), and color hue maps language.*

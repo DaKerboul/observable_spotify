@@ -190,6 +190,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one language-year record. Mark used = line + small dots, chosen because lines emphasize temporal continuity and dots make sampled yearly values explicit. Visual variables: x-position maps year, y-position maps track count, and color hue maps language.*
+
 </div>
 
 <div class="chart-card">
@@ -224,6 +226,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one language-year record after normalization by year total. Mark used = stacked area, chosen because it communicates both trend continuity and changing composition shares over time. Visual variables: x-position maps year, y-height maps share in %, and color hue maps language.*
+
 </div>
 
 <div class="chart-card">
@@ -247,6 +251,8 @@ const g=document.createElement("div");
 g.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:16px;";
 g.append(durPlot); display(g);
 ```
+
+*Encoding note (rough): data item = one language-year record. Mark used = line chart (in a two-column panel layout), chosen because duration is a continuous metric that is easiest to read as a temporal trajectory. Visual variables: x-position maps year, y-position maps average duration in minutes, and color hue maps language.*
 
 </div>
 

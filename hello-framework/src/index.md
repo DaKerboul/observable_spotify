@@ -4,8 +4,7 @@ toc: false
 
 <div class="hero">
   <h1>Evolution in music production</h1>
-  <h2>What were the widely spread trends in music throughout history and how did they
-evolved ?</h2>
+  <h2>How did the most widely shared music trends evolve over time, across genres and languages?</h2>
 </div>
 
 <style>
@@ -30,10 +29,11 @@ evolved ?</h2>
   background-clip: text;
 }
 .hero h2 {
-  margin: 0;
-  max-width: 34em;
-  font-size: 1rem;
-  font-weight: 500;
+  margin: 0.4rem 0 0;
+  max-width: 42rem;
+  font-size: clamp(1.15rem, 2.1vw, 1.65rem);
+  font-weight: 600;
+  line-height: 1.35;
   color: var(--theme-foreground-muted);
 }
 .nav-cards {
@@ -197,6 +197,8 @@ display(Plot.plot({
 }));
 ```
 
+*Encoding note (rough): data item = one genre with its total number of tracks over all years. Mark used = horizontal bar, chosen because bars are the clearest mark for comparing magnitudes across categories. Visual variables: y-position maps genre category, x-length maps number of tracks, and a single green color is used only for grouping this chart as one series.*
+
 ## Évolution des top 12 genres (1970 – 2025)
 
 ```js
@@ -228,3 +230,5 @@ display(Plot.plot({
   ]
 }));
 ```
+
+*Encoding note (rough): data item = one genre-year pair. Mark used = stacked area, chosen to show continuous change over time while also showing part-to-whole composition at each year. Visual variables: x-position maps year, y-height/area maps track count, and color hue maps genre identity.*
