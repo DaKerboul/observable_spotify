@@ -448,7 +448,7 @@ if(sorted.length>0){
 
 </div>
 
-## Popularité et durée moyenne par langue
+## Durée moyenne par langue
 
 ```js
 const lyFiltered = langYearData.filter(d =>
@@ -460,21 +460,6 @@ const lyFiltered = langYearData.filter(d =>
 const langDomain = selectedLangs;
 const langRange  = selectedLangs.map(l => getLangColor(l));
 
-const popChart = Plot.plot({
-  width: Math.floor(width/2)-8,
-  height: 200, marginLeft: 50, marginBottom: 40,
-  x: {label:"Année"},
-  y: {label:"Popularité moy.", grid:true},
-  color: {domain:langDomain, range:langRange, legend:false,
-    tickFormat: l=>getLang(l)},
-  marks:[
-    Plot.line(lyFiltered,{x:d=>+d.release_year,y:d=>+d.avg_track_popularity,
-      stroke:"language_code",strokeWidth:2,curve:"monotone-x",
-      tip:true, title:d=>`${getLang(d.language_code)} · ${d.release_year}\nPop: ${(+d.avg_track_popularity).toFixed(1)}`}),
-    Plot.dot(lyFiltered,{x:d=>+d.release_year,y:d=>+d.avg_track_popularity,
-      stroke:"language_code",r:2})
-  ]
-});
 
 const durChart = Plot.plot({
   width: Math.floor(width/2)-8,
@@ -494,6 +479,6 @@ const durChart = Plot.plot({
 
 const grid=document.createElement("div");
 grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:16px;";
-grid.append(popChart,durChart);
+grid.append(durChart);
 display(grid);
 ```

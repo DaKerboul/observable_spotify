@@ -1,4 +1,12 @@
-# Spotify Analytics — Observable Framework
+# Evolution in music production - Observable Framework
+
+
+Link Observable (Raph) : [https://observablehq.com/d/b649dde58ded7a47](https://observablehq.com/d/b649dde58ded7a47)
+(Has a few sketches, and did most of the tests on the first db extract)
+
+Link Observable (Antonin) : [https://observablehq.com/d/7ef3f0147760c7eb](https://observablehq.com/d/7ef3f0147760c7eb)
+(Just tried to implement the db and failed miserably, so there is almost nothing, we)
+I switched directly to this github project. (https://github.com/arussac-perso/observable_spotify)
 
 Visualization dashboard built with [Observable Framework](https://observablehq.com/framework/) exploring a Spotify dataset (genres, languages, release years).
 
@@ -56,3 +64,5 @@ A typical Framework project looks like this:
 | `npm run deploy`     | Deploy your app to Observable                            |
 | `npm run clean`      | Clear the local data loader cache                        |
 | `npm run observable` | Run commands like `observable help`                      |
+
+

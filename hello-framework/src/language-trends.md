@@ -66,7 +66,7 @@ toc: false
 
 <div class="page-title">
   <h1>Tendances par Langue</h1>
-  <p>Évolution du volume, de la popularité et de la durée moyenne par langue · 1970–2025</p>
+  <p>Évolution du volume et de la durée moyenne par langue · 1970–2025</p>
 </div>
 
 ```js
@@ -227,22 +227,9 @@ display(Plot.plot({
 </div>
 
 <div class="chart-card">
-<h3>Popularité moyenne & durée moyenne par langue</h3>
+<h3>Durée moyenne par langue</h3>
 
 ```js
-const popPlot = Plot.plot({
-  width:Math.floor(width/2)-8, height:220, marginLeft:52, marginBottom:40,
-  x:{label:"Année"},
-  y:{label:"Popularité moy.", grid:true},
-  color:{domain:langDomain, range:langColors, legend:false},
-  marks:[
-    Plot.line(filtered,{
-      x:d=>+d.release_year, y:d=>+d.avg_track_popularity,
-      stroke:"language_code", strokeWidth:2, curve:"monotone-x",
-      tip:true, title:d=>`${getLang(d.language_code)} · ${d.release_year}\nPop: ${(+d.avg_track_popularity).toFixed(1)}`
-    })
-  ]
-});
 const durPlot = Plot.plot({
   width:Math.floor(width/2)-8, height:220, marginLeft:58, marginBottom:40,
   x:{label:"Année"},
@@ -258,7 +245,7 @@ const durPlot = Plot.plot({
 });
 const g=document.createElement("div");
 g.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:16px;";
-g.append(popPlot,durPlot); display(g);
+g.append(durPlot); display(g);
 ```
 
 </div>
@@ -270,12 +257,11 @@ const summary = allLangs.slice(0,15).map(code => {
   const rows = langYear.filter(d=>d.language_code===code && +d.release_year>=yearRange[0] && +d.release_year<=yearRange[1]);
   if (!rows.length) return null;
   const total = d3.sum(rows, d=>+d.track_count);
-  const avgPop = d3.mean(rows, d=>+d.avg_track_popularity);
   const avgDur = d3.mean(rows, d=>+d.avg_duration_ms);
   const popTrend = rows.length > 4
     ? (+(rows[rows.length-1].avg_track_popularity) - +(rows[0].avg_track_popularity)).toFixed(1)
     : "—";
-  return {code, label:getLang(code), total, avgPop, avgDur, popTrend, color:getColor(code)};
+  return {code, label:getLang(code), total, avgDur, popTrend, color:getColor(code)};
 }).filter(Boolean);
 
 const maxTotal = Math.max(...summary.map(d=>d.total));
@@ -283,7 +269,7 @@ const maxTotal = Math.max(...summary.map(d=>d.total));
 const table = document.createElement("table");
 table.className="stats-table";
 table.innerHTML=`<thead><tr>
-  <th>Langue</th><th>Total titres</th><th>Pop. moy.</th><th>Durée moy.</th><th>Tendance pop.</th>
+  <th>Langue</th><th>Total titres</th><th>Durée moy.</th><th>Tendance pop.</th>
 </tr></thead>`;
 const tbody=document.createElement("tbody");
 summary.forEach(d=>{
@@ -291,7 +277,6 @@ summary.forEach(d=>{
   tr.innerHTML=`
     <td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${d.color};margin-right:6px;vertical-align:middle;"></span>${d.label}</td>
     <td><span class="bar-inline" style="width:${(d.total/maxTotal*100).toFixed(0)}px;background:${d.color};"></span>${d.total.toLocaleString()}</td>
-    <td>${d.avgPop ? d.avgPop.toFixed(1) : "—"}</td>
     <td>${d.avgDur ? (d.avgDur/60000).toFixed(2)+" min" : "—"}</td>
     <td style="color:${d.popTrend>0?"#1DB954":d.popTrend<0?"#e84040":"var(--theme-foreground-muted)"}">${d.popTrend!=="—"?(d.popTrend>0?"+":"")+d.popTrend:d.popTrend}</td>
   `;

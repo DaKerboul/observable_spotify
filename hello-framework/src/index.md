@@ -3,8 +3,9 @@ toc: false
 ---
 
 <div class="hero">
-  <h1>Spotify Analytics</h1>
-  <h2>9,8 millions de titres · 4 tables · données Anna's Archive 2025</h2>
+  <h1>Evolution in music production</h1>
+  <h2>What were the widely spread trends in music throughout history and how did they
+evolved ?</h2>
 </div>
 
 <style>
@@ -110,7 +111,7 @@ toc: false
   <a class="nav-card" href="./language-trends">
     <span class="nav-card-icon">🌍</span>
     <span class="nav-card-title">Tendances par langue</span>
-    <span class="nav-card-desc">Volume, popularité, durée par langue</span>
+    <span class="nav-card-desc">Volume, durée par langue</span>
   </a>
   <a class="nav-card" href="./audio-features">
     <span class="nav-card-icon">🎛️</span>
@@ -224,41 +225,6 @@ display(Plot.plot({
       title: d => `${d.genre} · ${d.release_year}\n${Number(d.track_count).toLocaleString()} titres`
     }),
     Plot.ruleY([0])
-  ]
-}));
-```
-
-## Popularité moyenne par langue (1970–2025)
-
-```js
-const topLangs = [...byLang.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(d=>d[0]);
-const langColors = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c","#16a085","#d35400"];
-const lc = Object.fromEntries(topLangs.map((l,i)=>[l,langColors[i]]));
-
-const lyFiltered = langYear.filter(d => topLangs.includes(d.language_code) && +d.release_year >= 1970);
-
-display(Plot.plot({
-  width,
-  height: 260,
-  marginLeft: 55,
-  marginBottom: 40,
-  y: { label: "Popularité moy.", grid: true },
-  color: {
-    domain: topLangs,
-    range: topLangs.map(l=>lc[l]),
-    legend: true,
-    tickFormat: l => langLabel[l] ?? l.toUpperCase()
-  },
-  marks: [
-    Plot.line(lyFiltered, {
-      x: d => +d.release_year,
-      y: d => +d.avg_track_popularity,
-      stroke: "language_code",
-      curve: "monotone-x",
-      strokeWidth: 2,
-      tip: true,
-      title: d => `${langLabel[d.language_code]??d.language_code} · ${d.release_year}\nPopularité: ${(+d.avg_track_popularity).toFixed(1)}`
-    })
   ]
 }));
 ```
