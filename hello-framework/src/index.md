@@ -4,7 +4,7 @@ toc: false
 
 <div class="hero">
   <h1>Spotify Analytics</h1>
-  <h2>Exploration des donn�es Spotify</h2>
+  <h2>Exploration des données Spotify</h2>
 </div>
 
 <style>
