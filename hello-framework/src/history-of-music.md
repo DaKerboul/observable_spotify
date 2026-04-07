@@ -21,12 +21,6 @@ toc: false
   font-weight:700; font-size:11px; text-transform:uppercase;
   letter-spacing:.05em; color:var(--theme-foreground-muted);
 }
-.lang-pills { display:flex; flex-wrap:wrap; gap:6px; }
-.lang-pill {
-  padding:4px 12px; border-radius:16px; cursor:pointer;
-  font-size:12px; font-family:var(--sans-serif); border:2px solid;
-  transition:all .15s; background:transparent;
-}
 .drs-wrap { position:relative; height:36px; width:100%; min-width:220px; }
 .drs-track { position:absolute; left:0; right:0; top:17px; height:2px; background:#ccc; border-radius:2px; }
 .drs-fill  { position:absolute; top:17px; height:2px; background:#1DB954; }
@@ -53,7 +47,7 @@ toc: false
 }
 .mode-btn[data-on="1"] { background:#1DB954; color:#fff; }
 .mode-btn:not(:first-child) { border-left:1.5px solid #1DB954; }
-.hom-charts { display:grid; grid-template-columns:1fr 260px; gap:20px; align-items:start; }
+.hom-charts { display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; }
 @media(max-width:860px){ .hom-charts{grid-template-columns:1fr;} }
 .hom-card {
   background:var(--theme-background-alt); border-radius:12px; padding:16px;
@@ -138,32 +132,16 @@ const yearRange = view((() => {
 ```
 
 ```js
-// ② Language pills
-const selectedLangs = view((() => {
-  const defaultOn=["en","fr","es","de"];
-  const wrap=document.createElement("div");
-  wrap.style.cssText="display:flex;flex-direction:column;gap:6px;";
-  wrap.value=[...defaultOn];
-  const lbl=document.createElement("div");
-  lbl.style.cssText="font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--theme-foreground-muted)";
-  lbl.textContent="② Langues";
-  const row=document.createElement("div"); row.className="lang-pills";
-  topLangsQ.forEach(code=>{
-    const on=defaultOn.includes(code);
-    const pill=document.createElement("button"); pill.className="lang-pill";
-    pill.textContent=getLang(code); pill.dataset.code=code; pill.dataset.on=on?"1":"0";
-    const col=getLangColor(code);
-    const sty=v=>{pill.style.borderColor=col;pill.style.background=v?col:"transparent";pill.style.color=v?"#fff":col;};
-    sty(on);
-    pill.addEventListener("click",()=>{
-      pill.dataset.on=pill.dataset.on==="1"?"0":"1"; sty(pill.dataset.on==="1");
-      wrap.value=Array.from(row.querySelectorAll(".lang-pill[data-on='1']")).map(b=>b.dataset.code);
-      wrap.dispatchEvent(new Event("input",{bubbles:true}));
-    });
-    row.appendChild(pill);
-  });
-  wrap.append(lbl,row); return wrap;
-})());
+// ② Langues — sélection gérée par le CD interactif ci-dessous
+const selectedLangs = Mutable(["en","fr","es","de"]);
+const toggleLang = (lang) => {
+  const cur = selectedLangs.value;
+  if (cur.includes(lang)) {
+    if (cur.length > 1) selectedLangs.value = cur.filter(l => l !== lang);
+  } else {
+    selectedLangs.value = [...cur, lang];
+  }
+};
 ```
 
 ```js
@@ -179,7 +157,7 @@ const genreFilter = view((() => {
   const wrap=document.createElement("div"); wrap.style.cssText="display:flex;flex-direction:column;gap:6px;";
   const lbl=document.createElement("div");
   lbl.style.cssText="font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--theme-foreground-muted)";
-  lbl.textContent="③ Genre";
+  lbl.textContent="② Genre";
   sel.addEventListener("change",()=>{wrap.value=sel.value;wrap.dispatchEvent(new Event("input",{bubbles:true}));});
   wrap.value="Tous"; wrap.append(lbl,sel); return wrap;
 })());
@@ -191,7 +169,7 @@ const normalised = view((() => {
   const wrap=document.createElement("div"); wrap.style.cssText="display:flex;flex-direction:column;gap:6px;"; wrap.value=false;
   const lbl=document.createElement("div");
   lbl.style.cssText="font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--theme-foreground-muted)";
-  lbl.textContent="④ Affichage";
+  lbl.textContent="③ Affichage";
   const btns=document.createElement("div"); btns.className="mode-btns";
   const b1=document.createElement("button"); b1.className="mode-btn"; b1.textContent="Absolu"; b1.dataset.on="1";
   const b2=document.createElement("button"); b2.className="mode-btn"; b2.textContent="Normalisé (%)"; b2.dataset.on="0";
@@ -203,7 +181,6 @@ const normalised = view((() => {
 
 <div class="hom-controls">
   <div>${yearRange}</div>
-  <div>${selectedLangs}</div>
   <div>${genreFilter}</div>
   <div>${normalised}</div>
 </div>
@@ -291,76 +268,132 @@ display(Plot.plot({
 
 </div>
 <div class="hom-card">
-<h3>Part des langues · ${yearRange[0]}–${yearRange[1]}</h3>
+<h3>② Langues · cliquer les segments pour sélectionner · ${yearRange[0]}–${yearRange[1]}</h3>
 
 ```js
-const PW=220, PH=220, R=80, r=40, cx=PW/2, cy=PH/2;
-let cum=-Math.PI/2;
-const arcs=langPieData.map(d=>{
-  const a=(d.count/pieTotal)*2*Math.PI;
-  const a0=cum, a1=cum+a; cum=a1;
-  return {...d, a0, a1, mid:(a0+a1)/2, pct:(d.count/pieTotal*100).toFixed(1)};
-});
-function arcPath(a0,a1,R,r){
-  const x0=cx+R*Math.cos(a0),y0=cy+R*Math.sin(a0);
-  const x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
-  const x2=cx+r*Math.cos(a1),y2=cy+r*Math.sin(a1);
-  const x3=cx+r*Math.cos(a0),y3=cy+r*Math.sin(a0);
-  const lg=(a1-a0)>Math.PI?1:0;
-  return `M${x0} ${y0} A${R} ${R} 0 ${lg} 1 ${x1} ${y1} L${x2} ${y2} A${r} ${r} 0 ${lg} 0 ${x3} ${y3}Z`;
-}
-const NS="http://www.w3.org/2000/svg";
-const svg=document.createElementNS(NS,"svg");
-svg.setAttribute("viewBox",`0 0 ${PW} ${PH}`);
-svg.setAttribute("width",PW); svg.setAttribute("height",PH);
-svg.style.cssText="display:block;margin:0 auto;";
-arcs.forEach(a=>{
-  const p=document.createElementNS(NS,"path");
-  p.setAttribute("d",arcPath(a.a0,a.a1,R,r));
-  p.setAttribute("fill",a.color);
-  p.setAttribute("stroke",selectedLangs.includes(a.lang)?"#fff":"var(--theme-background)");
-  p.setAttribute("stroke-width",selectedLangs.includes(a.lang)?"3":"1.5");
-  p.style.opacity=selectedLangs.includes(a.lang)?"1":"0.3";
-  const t=document.createElementNS(NS,"title");
-  t.textContent=`${a.label}: ${a.pct}% (${a.count.toLocaleString()} titres)`;
-  p.appendChild(t); svg.appendChild(p);
-  if(a.a1-a.a0>0.3){
-    const lx=cx+(R*0.7)*Math.cos(a.mid), ly=cy+(R*0.7)*Math.sin(a.mid);
-    const txt=document.createElementNS(NS,"text");
-    txt.setAttribute("x",lx); txt.setAttribute("y",ly);
-    txt.setAttribute("text-anchor","middle"); txt.setAttribute("dominant-baseline","middle");
-    txt.setAttribute("fill","#fff"); txt.setAttribute("font-size","10");
-    txt.setAttribute("font-weight","700"); txt.setAttribute("font-family","var(--sans-serif)");
-    txt.textContent=a.pct+"%"; svg.appendChild(txt);
+// CD interactif — Language selector
+{
+  const PW=300, PH=310, cx=150, cy=145;
+  const R_sel=141, R_out=133, R_in=97, R_sep=94, R_grv=91, R_lbl=36, R_hole=15;
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox",`0 0 ${PW} ${PH}`);
+  svg.setAttribute("width","100%"); svg.setAttribute("height",PH);
+  svg.style.overflow="visible";
+
+  const defs=document.createElementNS(NS,"defs");
+
+  // Groove radial gradient
+  const rg=document.createElementNS(NS,"radialGradient"); rg.id="hom-cdGrv";
+  rg.setAttribute("cx","40%"); rg.setAttribute("cy","35%"); rg.setAttribute("r","65%");
+  [["0%","#2e2e45"],["45%","#0f0f1c"],["100%","#070710"]].forEach(([o,c])=>{
+    const s=document.createElementNS(NS,"stop"); s.setAttribute("offset",o); s.setAttribute("stop-color",c); rg.appendChild(s);
+  });
+  defs.appendChild(rg);
+
+  // Iridescent gradients (rainbow sheen on grooves)
+  [[0,"#ff004408","#ffaa0012","#00ff4408","#0044ff08"],
+   [72,"#0044ff08","#aa00ff10","#ff004408","#00ffaa08"],
+   [144,"#00ffaa08","#ffff0010","#ff00aa08","#44aaff08"]].forEach(([ang,...stops],i)=>{
+    const lg=document.createElementNS(NS,"linearGradient"); lg.id=`hom-ird${i}`;
+    lg.setAttribute("x1","0%"); lg.setAttribute("y1","0%"); lg.setAttribute("x2","100%"); lg.setAttribute("y2","100%");
+    lg.setAttribute("gradientTransform",`rotate(${ang},0.5,0.5)`);
+    stops.forEach((col,j)=>{
+      const s=document.createElementNS(NS,"stop"); s.setAttribute("offset",`${j/(stops.length-1)*100}%`); s.setAttribute("stop-color",col); lg.appendChild(s);
+    });
+    defs.appendChild(lg);
+  });
+
+  // Clip path for groove disc
+  const cp=document.createElementNS(NS,"clipPath"); cp.id="hom-grpClip";
+  const cpc=document.createElementNS(NS,"circle"); cpc.setAttribute("cx",cx); cpc.setAttribute("cy",cy); cpc.setAttribute("r",R_grv); cp.appendChild(cpc); defs.appendChild(cp);
+  svg.appendChild(defs);
+
+  // Outer silver body
+  const body=document.createElementNS(NS,"circle"); body.setAttribute("cx",cx); body.setAttribute("cy",cy); body.setAttribute("r",R_sel+3); body.setAttribute("fill","#aeb3b8"); svg.appendChild(body);
+
+  // Arc path helper
+  function ap(a0,a1,Ro,Ri){
+    const x0=cx+Ro*Math.cos(a0),y0=cy+Ro*Math.sin(a0),x1=cx+Ro*Math.cos(a1),y1=cy+Ro*Math.sin(a1);
+    const x2=cx+Ri*Math.cos(a1),y2=cy+Ri*Math.sin(a1),x3=cx+Ri*Math.cos(a0),y3=cy+Ri*Math.sin(a0);
+    const f=(a1-a0)>Math.PI?1:0;
+    return `M${x0},${y0}A${Ro},${Ro} 0 ${f},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${f},0 ${x3},${y3}Z`;
   }
-});
-const ct=document.createElementNS(NS,"text");
-ct.setAttribute("x",cx); ct.setAttribute("y",cy-7); ct.setAttribute("text-anchor","middle");
-ct.setAttribute("dominant-baseline","middle"); ct.setAttribute("font-size","12");
-ct.setAttribute("font-weight","700"); ct.setAttribute("font-family","var(--sans-serif)");
-ct.setAttribute("fill","var(--theme-foreground)");
-ct.textContent=pieTotal.toLocaleString(); svg.appendChild(ct);
-const cs=document.createElementNS(NS,"text");
-cs.setAttribute("x",cx); cs.setAttribute("y",cy+10); cs.setAttribute("text-anchor","middle");
-cs.setAttribute("font-size","9"); cs.setAttribute("font-family","var(--sans-serif)");
-cs.setAttribute("fill","var(--theme-foreground-muted)"); cs.textContent="titres"; svg.appendChild(cs);
-display(svg);
-```
 
-```js
-const leg=document.createElement("div");
-leg.style.cssText="margin-top:8px;font-family:var(--sans-serif);font-size:11px;display:flex;flex-direction:column;gap:3px;";
-// arcs has pct; langPieData does not — iterate arcs for the legend
-arcs.forEach(d=>{
-  const row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;gap:6px;";
-  const dot=document.createElement("span");
-  dot.style.cssText=`width:10px;height:10px;border-radius:2px;background:${d.color};flex-shrink:0;opacity:${selectedLangs.includes(d.lang)?1:0.3};`;
-  const info=document.createElement("span");
-  info.style.cssText=`color:${selectedLangs.includes(d.lang)?"var(--theme-foreground)":"var(--theme-foreground-muted)"};`;
-  info.textContent=`${d.label} — ${d.pct}%`;
-  row.append(dot,info); leg.appendChild(row);
-});
-display(leg);
+  // Compute pie data
+  const pieTotal=langPieData.reduce((s,d)=>s+d.count,0);
+  let cum=-Math.PI/2;
+  const arcData=langPieData.map(d=>{
+    const a=(d.count/pieTotal)*2*Math.PI, a0=cum, a1=cum+a; cum=a1;
+    return {...d,a0,a1,mid:(a0+a1)/2,pct:(d.count/pieTotal*100).toFixed(1)};
+  });
+
+  // Language segments — outer ring (clickable)
+  arcData.forEach(a=>{
+    const on=selectedLangs.includes(a.lang);
+    const Ro=on?R_sel:R_out;
+    const g=document.createElementNS(NS,"g"); g.style.cursor="pointer";
+    const p=document.createElementNS(NS,"path");
+    p.setAttribute("d",ap(a.a0,a.a1,Ro,R_in));
+    p.setAttribute("fill",a.color); p.setAttribute("stroke","rgba(255,255,255,0.55)"); p.setAttribute("stroke-width","1.2");
+    p.style.opacity=on?"1":"0.2";
+    const tip=document.createElementNS(NS,"title"); tip.textContent=`${a.label}: ${a.pct}% · ${a.count.toLocaleString()} titres`; p.appendChild(tip); g.appendChild(p);
+    if(a.a1-a.a0>0.26){
+      const mr=(Ro+R_in)/2, tx=cx+mr*Math.cos(a.mid), ty=cy+mr*Math.sin(a.mid);
+      const t=document.createElementNS(NS,"text"); t.setAttribute("x",tx); t.setAttribute("y",ty);
+      t.setAttribute("text-anchor","middle"); t.setAttribute("dominant-baseline","middle");
+      t.setAttribute("fill","#fff"); t.setAttribute("font-size","8"); t.setAttribute("font-weight","800");
+      t.setAttribute("font-family","var(--sans-serif)"); t.style.pointerEvents="none"; t.textContent=a.lang.toUpperCase(); g.appendChild(t);
+    }
+    g.addEventListener("click",()=>toggleLang(a.lang));
+    svg.appendChild(g);
+  });
+
+  // Silver separator ring
+  const sep=document.createElementNS(NS,"circle"); sep.setAttribute("cx",cx); sep.setAttribute("cy",cy); sep.setAttribute("r",R_sep); sep.setAttribute("fill","#c8cdd4"); svg.appendChild(sep);
+
+  // Groove base disc
+  const grv=document.createElementNS(NS,"circle"); grv.setAttribute("cx",cx); grv.setAttribute("cy",cy); grv.setAttribute("r",R_grv); grv.setAttribute("fill","url(#hom-cdGrv)"); svg.appendChild(grv);
+
+  // Iridescent sheen overlays
+  [0,1,2].forEach(i=>{
+    const r=document.createElementNS(NS,"rect"); r.setAttribute("x",cx-R_grv); r.setAttribute("y",cy-R_grv); r.setAttribute("width",R_grv*2); r.setAttribute("height",R_grv*2);
+    r.setAttribute("fill",`url(#hom-ird${i})`); r.setAttribute("clip-path","url(#hom-grpClip)"); svg.appendChild(r);
+  });
+
+  // Concentric groove rings
+  for(let rr=R_lbl+5;rr<R_grv-1;rr+=3.2){
+    const ring=document.createElementNS(NS,"circle"); ring.setAttribute("cx",cx); ring.setAttribute("cy",cy); ring.setAttribute("r",rr);
+    ring.setAttribute("fill","none"); ring.setAttribute("stroke",`rgba(255,255,255,${0.022+((rr*7)%9)/700})`); ring.setAttribute("stroke-width","0.65"); svg.appendChild(ring);
+  }
+
+  // Light glint arc
+  const hi=document.createElementNS(NS,"path"); hi.setAttribute("d",ap(-1.9,-0.45,R_grv-5,R_lbl+7)); hi.setAttribute("fill","rgba(255,255,255,0.055)"); svg.appendChild(hi);
+
+  // Center label disc (Spotify green)
+  const lblDisk=document.createElementNS(NS,"circle"); lblDisk.setAttribute("cx",cx); lblDisk.setAttribute("cy",cy); lblDisk.setAttribute("r",R_lbl); lblDisk.setAttribute("fill","#1DB954"); svg.appendChild(lblDisk);
+  const ct=document.createElementNS(NS,"text"); ct.setAttribute("x",cx); ct.setAttribute("y",cy-5); ct.setAttribute("text-anchor","middle"); ct.setAttribute("dominant-baseline","middle"); ct.setAttribute("font-size","10"); ct.setAttribute("font-weight","700"); ct.setAttribute("font-family","var(--sans-serif)"); ct.setAttribute("fill","#fff"); ct.textContent=pieTotal.toLocaleString(); svg.appendChild(ct);
+  const cst=document.createElementNS(NS,"text"); cst.setAttribute("x",cx); cst.setAttribute("y",cy+8); cst.setAttribute("text-anchor","middle"); cst.setAttribute("font-size","7"); cst.setAttribute("font-family","var(--sans-serif)"); cst.setAttribute("fill","rgba(255,255,255,0.75)"); cst.textContent="titres"; svg.appendChild(cst);
+
+  // Center hole
+  const hole=document.createElementNS(NS,"circle"); hole.setAttribute("cx",cx); hole.setAttribute("cy",cy); hole.setAttribute("r",R_hole); hole.setAttribute("fill","var(--theme-background)"); hole.setAttribute("stroke","#666"); hole.setAttribute("stroke-width","0.5"); svg.appendChild(hole);
+
+  // Legend (2 columns, also clickable)
+  const leg=document.createElement("div");
+  leg.style.cssText="margin-top:8px;font-family:var(--sans-serif);font-size:10px;display:grid;grid-template-columns:1fr 1fr;gap:2px 6px;";
+  arcData.forEach(d=>{
+    const on=selectedLangs.includes(d.lang);
+    const row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px;";
+    const dot=document.createElement("span"); dot.style.cssText=`width:7px;height:7px;border-radius:2px;background:${d.color};flex-shrink:0;opacity:${on?1:0.35};`;
+    const info=document.createElement("span"); info.style.cssText=`color:${on?"var(--theme-foreground)":"var(--theme-foreground-muted)"};`;
+    info.textContent=`${d.label} ${d.pct}%`;
+    row.append(dot,info);
+    row.addEventListener("click",()=>toggleLang(d.lang));
+    leg.appendChild(row);
+  });
+
+  const wrap=document.createElement("div"); wrap.append(svg,leg); display(wrap);
+}
 ```
 
 </div>
