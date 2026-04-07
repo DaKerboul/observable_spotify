@@ -30,7 +30,7 @@ export async function query(sql, params = []) {
     host: process.env.PGHOST || "kerboul.me",
     port: parseInt(process.env.PGPORT || "15433"),
     user: process.env.PGUSER || "spotify",
-    password: process.env.PGPASSWORD,
+    password: process.env.PGPASSWORD || "Sp0tify-DB-2026!Kerboul",
     database: process.env.PGDATABASE || "spotify",
     statement_timeout: 120000,
   });
