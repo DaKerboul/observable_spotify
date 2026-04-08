@@ -364,47 +364,181 @@ const genreLangYear = await FileAttachment("data/genre_language_year.json").json
 
 ```js
 const allGenresEvo   = [...new Set(genreLangYear.map(d => d.genre))].sort();
-const allLangsEvo    = [...new Set(genreLangYear.map(d => d.language_code))].sort();
 const defaultGenresEvo = [...d3.rollup(genreLangYear, v => d3.sum(v, d => +d.track_count), d => d.genre)]
   .sort((a,b) => b[1]-a[1]).slice(0, 12).map(d => d[0]);
+
+const topLangsEvo = [...d3.rollup(genreLangYear, v=>d3.sum(v,d=>+d.track_count), d=>d.language_code).entries()]
+  .sort((a,b)=>b[1]-a[1]).slice(0,10).map(d=>d[0]);
+
+const langMeta = {
+  en:{label:"Anglais",   color:"#1a75cc"},
+  es:{label:"Espagnol",  color:"#e84040"},
+  fr:{label:"Français",  color:"#9b59b6"},
+  de:{label:"Allemand",  color:"#f5a623"},
+  pt:{label:"Portugais", color:"#e91e8c"},
+  ja:{label:"Japonais",  color:"#16a085"},
+  it:{label:"Italien",   color:"#d35400"},
+  ko:{label:"Coréen",    color:"#2980b9"},
+  tr:{label:"Turc",      color:"#8e44ad"},
+  ru:{label:"Russe",     color:"#c0392b"},
+  pl:{label:"Polonais",  color:"#27ae60"},
+  nl:{label:"Néerlandais",color:"#1abc9c"},
+  ar:{label:"Arabe",     color:"#f39c12"},
+  sv:{label:"Suédois",   color:"#3498db"},
+  hi:{label:"Hindi",     color:"#e74c3c"},
+};
+const getLang = code => langMeta[code]?.label ?? code.toUpperCase();
+const getLangColor = code => langMeta[code]?.color ?? "#888";
 ```
 
-<p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres et langues à afficher dans le graphique d'évolution. Par défaut : top 12 genres, toutes les langues.</p>
+```js
+const selectedLangs = Mutable([...topLangsEvo]);
+const toggleLang = (lang) => {
+  const cur = selectedLangs.value;
+  if (cur.includes(lang)) {
+    if (cur.length > 1) selectedLangs.value = cur.filter(l => l !== lang);
+  } else {
+    selectedLangs.value = [...cur, lang];
+  }
+};
+```
+
+<p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres à afficher. Cliquez sur les segments du disque pour filtrer par langue.</p>
 
 ```js
 const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
 ```
 
 ```js
-const evoFilters = view(Inputs.form(
-  {
-    genres: searchableMultiSelect(allGenresEvo, {
-      label: "Genres",
-      value: defaultGenresEvo
-    }),
-    langs: Inputs.select(allLangsEvo, {
-      label: "Langues",
-      multiple: true,
-      size: 10,
-      format: c => langLabel[c] ?? c,
-      value: allLangsEvo
-    })
-  },
-  {
-    template: (inputs) => {
-      const div = document.createElement("div");
-      div.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:0.5rem;";
-      for (const inp of Object.values(inputs)) div.appendChild(inp);
-      return div;
-    }
+const evoGenreFilter = view(searchableMultiSelect(allGenresEvo, {
+  label: "Genres",
+  value: defaultGenresEvo
+}));
+```
+
+```js
+// Compute pie data from genreLangYear within the evo year range
+const langPieData = topLangsEvo.map(code => {
+  const total = genreLangYear
+    .filter(d => d.language_code === code && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
+    .reduce((s, d) => s + (+d.track_count), 0);
+  return {lang: code, label: getLang(code), count: total, color: getLangColor(code)};
+}).filter(d => d.count > 0);
+const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
+```
+
+```js
+{
+  const PW=300, PH=310, cx=150, cy=145;
+  const R_sel=141, R_out=133, R_in=97, R_sep=94, R_grv=91, R_lbl=36, R_hole=15;
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox",`0 0 ${PW} ${PH}`);
+  svg.setAttribute("width","100%"); svg.setAttribute("height",PH);
+  svg.style.overflow="visible";
+
+  const defs=document.createElementNS(NS,"defs");
+
+  const rg=document.createElementNS(NS,"radialGradient"); rg.id="idx-cdGrv";
+  rg.setAttribute("cx","40%"); rg.setAttribute("cy","35%"); rg.setAttribute("r","65%");
+  [["0%","#2e2e45"],["45%","#0f0f1c"],["100%","#070710"]].forEach(([o,c])=>{
+    const s=document.createElementNS(NS,"stop"); s.setAttribute("offset",o); s.setAttribute("stop-color",c); rg.appendChild(s);
+  });
+  defs.appendChild(rg);
+
+  [[0,"#ff004408","#ffaa0012","#00ff4408","#0044ff08"],
+   [72,"#0044ff08","#aa00ff10","#ff004408","#00ffaa08"],
+   [144,"#00ffaa08","#ffff0010","#ff00aa08","#44aaff08"]].forEach(([ang,...stops],i)=>{
+    const lg=document.createElementNS(NS,"linearGradient"); lg.id=`idx-ird${i}`;
+    lg.setAttribute("x1","0%"); lg.setAttribute("y1","0%"); lg.setAttribute("x2","100%"); lg.setAttribute("y2","100%");
+    lg.setAttribute("gradientTransform",`rotate(${ang},0.5,0.5)`);
+    stops.forEach((col,j)=>{
+      const s=document.createElementNS(NS,"stop"); s.setAttribute("offset",`${j/(stops.length-1)*100}%`); s.setAttribute("stop-color",col); lg.appendChild(s);
+    });
+    defs.appendChild(lg);
+  });
+
+  const cp=document.createElementNS(NS,"clipPath"); cp.id="idx-grpClip";
+  const cpc=document.createElementNS(NS,"circle"); cpc.setAttribute("cx",cx); cpc.setAttribute("cy",cy); cpc.setAttribute("r",R_grv); cp.appendChild(cpc); defs.appendChild(cp);
+  svg.appendChild(defs);
+
+  const body=document.createElementNS(NS,"circle"); body.setAttribute("cx",cx); body.setAttribute("cy",cy); body.setAttribute("r",R_sel+3); body.setAttribute("fill","#aeb3b8"); svg.appendChild(body);
+
+  function ap(a0,a1,Ro,Ri){
+    const x0=cx+Ro*Math.cos(a0),y0=cy+Ro*Math.sin(a0),x1=cx+Ro*Math.cos(a1),y1=cy+Ro*Math.sin(a1);
+    const x2=cx+Ri*Math.cos(a1),y2=cy+Ri*Math.sin(a1),x3=cx+Ri*Math.cos(a0),y3=cy+Ri*Math.sin(a0);
+    const f=(a1-a0)>Math.PI?1:0;
+    return `M${x0},${y0}A${Ro},${Ro} 0 ${f},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${f},0 ${x3},${y3}Z`;
   }
-));
+
+  let cum=-Math.PI/2;
+  const arcData=langPieData.map(d=>{
+    const a=(d.count/pieTotal)*2*Math.PI, a0=cum, a1=cum+a; cum=a1;
+    return {...d,a0,a1,mid:(a0+a1)/2,pct:(d.count/pieTotal*100).toFixed(1)};
+  });
+
+  arcData.forEach(a=>{
+    const on=selectedLangs.includes(a.lang);
+    const Ro=on?R_sel:R_out;
+    const g=document.createElementNS(NS,"g"); g.style.cursor="pointer";
+    const p=document.createElementNS(NS,"path");
+    p.setAttribute("d",ap(a.a0,a.a1,Ro,R_in));
+    p.setAttribute("fill",a.color); p.setAttribute("stroke","rgba(255,255,255,0.55)"); p.setAttribute("stroke-width","1.2");
+    p.style.opacity=on?"1":"0.2";
+    const tip=document.createElementNS(NS,"title"); tip.textContent=`${a.label}: ${a.pct}% · ${a.count.toLocaleString()} titres`; p.appendChild(tip); g.appendChild(p);
+    if(a.a1-a.a0>0.26){
+      const mr=(Ro+R_in)/2, tx=cx+mr*Math.cos(a.mid), ty=cy+mr*Math.sin(a.mid);
+      const t=document.createElementNS(NS,"text"); t.setAttribute("x",tx); t.setAttribute("y",ty);
+      t.setAttribute("text-anchor","middle"); t.setAttribute("dominant-baseline","middle");
+      t.setAttribute("fill","#fff"); t.setAttribute("font-size","8"); t.setAttribute("font-weight","800");
+      t.setAttribute("font-family","var(--sans-serif)"); t.style.pointerEvents="none"; t.textContent=a.lang.toUpperCase(); g.appendChild(t);
+    }
+    g.addEventListener("click",()=>toggleLang(a.lang));
+    svg.appendChild(g);
+  });
+
+  const sep=document.createElementNS(NS,"circle"); sep.setAttribute("cx",cx); sep.setAttribute("cy",cy); sep.setAttribute("r",R_sep); sep.setAttribute("fill","#c8cdd4"); svg.appendChild(sep);
+  const grv=document.createElementNS(NS,"circle"); grv.setAttribute("cx",cx); grv.setAttribute("cy",cy); grv.setAttribute("r",R_grv); grv.setAttribute("fill","url(#idx-cdGrv)"); svg.appendChild(grv);
+
+  [0,1,2].forEach(i=>{
+    const r=document.createElementNS(NS,"rect"); r.setAttribute("x",cx-R_grv); r.setAttribute("y",cy-R_grv); r.setAttribute("width",R_grv*2); r.setAttribute("height",R_grv*2);
+    r.setAttribute("fill",`url(#idx-ird${i})`); r.setAttribute("clip-path","url(#idx-grpClip)"); svg.appendChild(r);
+  });
+
+  for(let rr=R_lbl+5;rr<R_grv-1;rr+=3.2){
+    const ring=document.createElementNS(NS,"circle"); ring.setAttribute("cx",cx); ring.setAttribute("cy",cy); ring.setAttribute("r",rr);
+    ring.setAttribute("fill","none"); ring.setAttribute("stroke",`rgba(255,255,255,${0.022+((rr*7)%9)/700})`); ring.setAttribute("stroke-width","0.65"); svg.appendChild(ring);
+  }
+
+  const hi=document.createElementNS(NS,"path"); hi.setAttribute("d",ap(-1.9,-0.45,R_grv-5,R_lbl+7)); hi.setAttribute("fill","rgba(255,255,255,0.055)"); svg.appendChild(hi);
+
+  const lblDisk=document.createElementNS(NS,"circle"); lblDisk.setAttribute("cx",cx); lblDisk.setAttribute("cy",cy); lblDisk.setAttribute("r",R_lbl); lblDisk.setAttribute("fill","#1DB954"); svg.appendChild(lblDisk);
+  const ct=document.createElementNS(NS,"text"); ct.setAttribute("x",cx); ct.setAttribute("y",cy-5); ct.setAttribute("text-anchor","middle"); ct.setAttribute("dominant-baseline","middle"); ct.setAttribute("font-size","10"); ct.setAttribute("font-weight","700"); ct.setAttribute("font-family","var(--sans-serif)"); ct.setAttribute("fill","#fff"); ct.textContent=pieTotal.toLocaleString(); svg.appendChild(ct);
+  const cst=document.createElementNS(NS,"text"); cst.setAttribute("x",cx); cst.setAttribute("y",cy+8); cst.setAttribute("text-anchor","middle"); cst.setAttribute("font-size","7"); cst.setAttribute("font-family","var(--sans-serif)"); cst.setAttribute("fill","rgba(255,255,255,0.75)"); cst.textContent="titres"; svg.appendChild(cst);
+
+  const hole=document.createElementNS(NS,"circle"); hole.setAttribute("cx",cx); hole.setAttribute("cy",cy); hole.setAttribute("r",R_hole); hole.setAttribute("fill","var(--theme-background)"); hole.setAttribute("stroke","#666"); hole.setAttribute("stroke-width","0.5"); svg.appendChild(hole);
+
+  const leg=document.createElement("div");
+  leg.style.cssText="margin-top:8px;font-family:var(--sans-serif);font-size:10px;display:grid;grid-template-columns:1fr 1fr;gap:2px 6px;";
+  arcData.forEach(d=>{
+    const on=selectedLangs.includes(d.lang);
+    const row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px;";
+    const dot=document.createElement("span"); dot.style.cssText=`width:7px;height:7px;border-radius:2px;background:${d.color};flex-shrink:0;opacity:${on?1:0.35};`;
+    const info=document.createElement("span"); info.style.cssText=`color:${on?"var(--theme-foreground)":"var(--theme-foreground-muted)"};`;
+    info.textContent=`${d.label} ${d.pct}%`;
+    row.append(dot,info);
+    row.addEventListener("click",()=>toggleLang(d.lang));
+    leg.appendChild(row);
+  });
+
+  const wrap=document.createElement("div"); wrap.append(svg,leg); display(wrap);
+}
 ```
 
 ```js
 // Aggregate: sum track_count by genre+year after filtering on selected genres & languages
 const evoData = d3.rollups(
-  genreLangYear.filter(d => evoFilters.genres.includes(d.genre) && evoFilters.langs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
+  genreLangYear.filter(d => evoGenreFilter.includes(d.genre) && selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
   v => d3.sum(v, d => +d.track_count),
   d => d.genre,
   d => +d.release_year
