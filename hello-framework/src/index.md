@@ -360,6 +360,7 @@ display(Plot.plot({
 
 ```js
 const genreLangYear = await FileAttachment("data/genre_language_year.json").json();
+const audioFeatLangYear = await FileAttachment("data/audio_features_lang_year.json").json();
 ```
 
 ```js
@@ -403,18 +404,32 @@ const toggleLang = (lang) => {
 };
 ```
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;margin-bottom:1.5rem;">
+<div>
+
 <p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres à afficher. Cliquez sur les segments du disque pour filtrer par langue.</p>
 
 ```js
-const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
+const evoMode = view(Inputs.select(
+  ["genres", "tempo", "durée"],
+  {
+    label: "Analyser par",
+    format: d => ({"genres": "Genres", "tempo": "Tempo (BPM)", "durée": "Durée"})[d]
+  }
+));
 ```
 
 ```js
-const evoGenreFilter = view(searchableMultiSelect(allGenresEvo, {
-  label: "Genres",
-  value: defaultGenresEvo
-}));
+const evoGenreFilter = (() => {
+  const el = searchableMultiSelect(allGenresEvo, {label: "Genres", value: defaultGenresEvo});
+  el.style.display = evoMode === "genres" ? "" : "none";
+  display(el);
+  return Generators.input(el);
+})();
 ```
+
+</div>
+<div>
 
 ```js
 // Compute pie data from genreLangYear within the evo year range
@@ -471,9 +486,15 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
     return `M${x0},${y0}A${Ro},${Ro} 0 ${f},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${f},0 ${x3},${y3}Z`;
   }
 
+  const MIN_ANGLE = 0.05 * 2 * Math.PI;
+  const rawAngles = langPieData.map(d => (d.count / pieTotal) * 2 * Math.PI);
+  const clampedAngles = rawAngles.map(a => Math.max(a, MIN_ANGLE));
+  const angleScale = (2 * Math.PI) / clampedAngles.reduce((s, a) => s + a, 0);
+  const finalAngles = clampedAngles.map(a => a * angleScale);
+
   let cum=-Math.PI/2;
-  const arcData=langPieData.map(d=>{
-    const a=(d.count/pieTotal)*2*Math.PI, a0=cum, a1=cum+a; cum=a1;
+  const arcData=langPieData.map((d,i)=>{
+    const a=finalAngles[i], a0=cum, a1=cum+a; cum=a1;
     return {...d,a0,a1,mid:(a0+a1)/2,pct:(d.count/pieTotal*100).toFixed(1)};
   });
 
@@ -512,10 +533,6 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
 
   const hi=document.createElementNS(NS,"path"); hi.setAttribute("d",ap(-1.9,-0.45,R_grv-5,R_lbl+7)); hi.setAttribute("fill","rgba(255,255,255,0.055)"); svg.appendChild(hi);
 
-  const lblDisk=document.createElementNS(NS,"circle"); lblDisk.setAttribute("cx",cx); lblDisk.setAttribute("cy",cy); lblDisk.setAttribute("r",R_lbl); lblDisk.setAttribute("fill","#1DB954"); svg.appendChild(lblDisk);
-  const ct=document.createElementNS(NS,"text"); ct.setAttribute("x",cx); ct.setAttribute("y",cy-5); ct.setAttribute("text-anchor","middle"); ct.setAttribute("dominant-baseline","middle"); ct.setAttribute("font-size","10"); ct.setAttribute("font-weight","700"); ct.setAttribute("font-family","var(--sans-serif)"); ct.setAttribute("fill","#fff"); ct.textContent=pieTotal.toLocaleString(); svg.appendChild(ct);
-  const cst=document.createElementNS(NS,"text"); cst.setAttribute("x",cx); cst.setAttribute("y",cy+8); cst.setAttribute("text-anchor","middle"); cst.setAttribute("font-size","7"); cst.setAttribute("font-family","var(--sans-serif)"); cst.setAttribute("fill","rgba(255,255,255,0.75)"); cst.textContent="titres"; svg.appendChild(cst);
-
   const hole=document.createElementNS(NS,"circle"); hole.setAttribute("cx",cx); hole.setAttribute("cy",cy); hole.setAttribute("r",R_hole); hole.setAttribute("fill","var(--theme-background)"); hole.setAttribute("stroke","#666"); hole.setAttribute("stroke-width","0.5"); svg.appendChild(hole);
 
   const leg=document.createElement("div");
@@ -535,43 +552,89 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
 }
 ```
 
+</div>
+</div>
+
 ```js
-// Aggregate: sum track_count by genre+year after filtering on selected genres & languages
-const evoData = d3.rollups(
+// === Mode GENRES ===
+const evoData_genres = evoMode !== "genres" ? [] : d3.rollups(
   genreLangYear.filter(d => evoGenreFilter.includes(d.genre) && selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
   v => d3.sum(v, d => +d.track_count),
   d => d.genre,
   d => +d.release_year
 ).flatMap(([genre, years]) => years.map(([year, count]) => ({ genre, release_year: year, track_count: count })));
 
-const evoGenreOrder = [...d3.rollup(evoData, v => d3.sum(v, d => d.track_count), d => d.genre)]
-  .sort((a,b) => b[1]-a[1]).map(d => d[0]);
+// === Mode TEMPO ===
+const evoData_tempo = evoMode !== "tempo" ? [] : audioFeatLangYear
+  .filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
+  .map(d => ({ language: d.language_code, release_year: +d.release_year, value: +d.tempo }));
 
-const palette12 = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c",
-                   "#16a085","#d35400","#2980b9","#27ae60","#8e44ad","#c0392b"];
-const extPalette = d3.quantize(d3.interpolateRainbow, Math.max(evoGenreOrder.length, 1));
-const evoColors = evoGenreOrder.map((g,i) => i < palette12.length ? palette12[i] : extPalette[i]);
+// === Mode DURÉE ===
+const evoData_duree = evoMode !== "durée" ? [] : [...d3.rollup(
+  genreLangYear.filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
+  v => d3.mean(v, d => +d.avg_duration_ms) / 60000,
+  d => d.language_code,
+  d => +d.release_year
+)].flatMap(([lang, years]) => [...years].map(([year, val]) => ({ language: lang, release_year: year, value: val })));
 
-display(Plot.plot({
-  width,
-  height: 380,
-  marginLeft: 55,
-  marginBottom: 40,
-  y: { label: "Titres", grid: true, tickFormat: "s" },
-  color: { domain: evoGenreOrder, range: evoColors, legend: true, columns: 4 },
-  marks: [
-    Plot.areaY(evoData, {
-      x: "release_year",
-      y: "track_count",
-      fill: "genre",
-      order: evoGenreOrder,
-      curve: "monotone-x",
-      tip: true,
-      title: d => `${d.genre} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`
-    }),
-    Plot.ruleY([0])
-  ]
-}));
+{
+  if (evoMode === "genres") {
+    const evoGenreOrder = [...d3.rollup(evoData_genres, v => d3.sum(v, d => d.track_count), d => d.genre)]
+      .sort((a,b) => b[1]-a[1]).map(d => d[0]);
+    const palette12 = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c",
+                       "#16a085","#d35400","#2980b9","#27ae60","#8e44ad","#c0392b"];
+    const extPalette = d3.quantize(d3.interpolateRainbow, Math.max(evoGenreOrder.length, 1));
+    const evoColors = evoGenreOrder.map((g,i) => i < palette12.length ? palette12[i] : extPalette[i]);
+    display(Plot.plot({
+      width,
+      height: 380,
+      marginLeft: 55,
+      marginBottom: 40,
+      y: { label: "Titres", grid: true, tickFormat: "s" },
+      color: { domain: evoGenreOrder, range: evoColors, legend: true, columns: 4 },
+      marks: [
+        Plot.areaY(evoData_genres, {
+          x: "release_year",
+          y: "track_count",
+          fill: "genre",
+          order: evoGenreOrder,
+          curve: "monotone-x",
+          tip: true,
+          title: d => `${d.genre} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`
+        }),
+        Plot.ruleY([0])
+      ]
+    }));
+  } else {
+    const langOrder = topLangsEvo.filter(l => selectedLangs.includes(l));
+    const langColors = langOrder.map(l => getLangColor(l));
+    const data = evoMode === "tempo" ? evoData_tempo : evoData_duree;
+    const yLabel = evoMode === "tempo" ? "BPM moyen" : "Durée (min)";
+    display(Plot.plot({
+      width,
+      height: 380,
+      marginLeft: 55,
+      marginBottom: 40,
+      y: { label: yLabel, grid: true },
+      color: { domain: langOrder, range: langColors },
+      marks: [
+        Plot.lineY(data, {
+          x: "release_year",
+          y: "value",
+          stroke: "language",
+          curve: "monotone-x",
+          tip: true,
+          title: d => `${getLang(d.language)} · ${d.release_year}\n${d.value.toFixed(evoMode === "tempo" ? 1 : 2)} ${evoMode === "tempo" ? "BPM" : "min"}`
+        }),
+        Plot.ruleY([0])
+      ]
+    }));
+  }
+}
+```
+
+```js
+const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
 ```
 
 *Encoding note (rough): data item = one genre-year pair (aggregated across selected languages). Mark used = stacked area, chosen to show continuous change over time while also showing part-to-whole composition at each year. Visual variables: x-position maps year, y-height/area maps track count, and color hue maps genre identity.*
