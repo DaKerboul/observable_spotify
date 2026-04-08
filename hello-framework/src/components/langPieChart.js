@@ -10,7 +10,7 @@
  */
 export function langPieChart(langPieData, pieTotal, selectedLangs, toggleLang) {
   const PW = 300, PH = 310, cx = 150, cy = 145;
-  const R_sel = 141, R_out = 133, R_in = 97, R_sep = 94, R_grv = 91, R_lbl = 36, R_hole = 15;
+  const R_sel = 141, R_out = 133, R_in = 97, R_sep = 94, R_grv = 91, R_lbl = 36, R_hole = 25;
   const NS = "http://www.w3.org/2000/svg";
 
   const svg = document.createElementNS(NS, "svg");
@@ -75,12 +75,8 @@ export function langPieChart(langPieData, pieTotal, selectedLangs, toggleLang) {
     return `M${x0},${y0}A${Ro},${Ro} 0 ${lf},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${lf},0 ${x3},${y3}Z`;
   }
 
-  // ── Proportional arc angles with minimum-size clamping ────────────────────
-  const MIN_ANGLE = 0.05 * 2 * Math.PI;
-  const rawAngles     = langPieData.map(d => (d.count / pieTotal) * 2 * Math.PI);
-  const clampedAngles = rawAngles.map(a => Math.max(a, MIN_ANGLE));
-  const angleScale    = (2 * Math.PI) / clampedAngles.reduce((s, a) => s + a, 0);
-  const finalAngles   = clampedAngles.map(a => a * angleScale);
+  // ── Equal-size arc angles for uniform clickability ──────────────────────────
+  const finalAngles = langPieData.map(() => (2 * Math.PI) / langPieData.length);
 
   let cum = -Math.PI / 2;
   const arcData = langPieData.map((d, i) => {
@@ -155,8 +151,12 @@ export function langPieChart(langPieData, pieTotal, selectedLangs, toggleLang) {
   // ── Center hole ────────────────────────────────────────────────────────────
   const hole = document.createElementNS(NS, "circle");
   hole.setAttribute("cx", cx); hole.setAttribute("cy", cy); hole.setAttribute("r", R_hole);
-  hole.setAttribute("fill", "var(--theme-background)"); hole.setAttribute("stroke", "#666"); hole.setAttribute("stroke-width", "0.5");
+  hole.setAttribute("fill", "#0d0d1a"); hole.setAttribute("stroke", "#555"); hole.setAttribute("stroke-width", "1.5");
   svg.appendChild(hole);
+  const holeRing = document.createElementNS(NS, "circle");
+  holeRing.setAttribute("cx", cx); holeRing.setAttribute("cy", cy); holeRing.setAttribute("r", R_hole - 7);
+  holeRing.setAttribute("fill", "none"); holeRing.setAttribute("stroke", "rgba(255,255,255,0.22)"); holeRing.setAttribute("stroke-width", "0.9");
+  svg.appendChild(holeRing);
 
   // ── Legend ────────────────────────────────────────────────────────────────
   const legend = document.createElement("div");

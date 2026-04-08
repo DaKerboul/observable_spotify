@@ -95,6 +95,38 @@ toc: false
   color: var(--theme-foreground-muted);
   margin-top: 2px;
 }
+
+/* ── evoMode styled tab selector ─────────────────────────────────────────── */
+.evo-mode-tabs { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.emt-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--theme-foreground-muted); white-space: nowrap; }
+.emt-group { display: flex; gap: 4px; flex-wrap: wrap; }
+.emt-btn {
+  padding: 5px 15px; border-radius: 8px;
+  border: 1.5px solid var(--theme-foreground-faint, #ddd);
+  background: var(--theme-background-alt);
+  color: var(--theme-foreground-muted);
+  font-size: 0.8rem; font-weight: 600; font-family: var(--sans-serif);
+  cursor: pointer; transition: all .12s; line-height: 1.4;
+}
+.emt-btn:hover:not(.active) { border-color: #1DB95488; color: var(--theme-foreground); }
+.emt-btn.active { background: #1DB954; border-color: #1DB954; color: #fff; }
+
+/* ── Genre chip filter (above disc) ─────────────────────────────────────── */
+.genre-chip-filter { margin-bottom: 8px; }
+.gcf-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.gcf-label-text { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--theme-foreground-muted); }
+.gcf-all-btn { font-size: 9px; font-weight: 600; background: none; border: none; cursor: pointer; color: var(--theme-foreground-muted); padding: 0; text-decoration: underline; font-family: var(--sans-serif); }
+.gcf-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.gcf-chip {
+  padding: 2px 8px; border-radius: 999px;
+  border: 1.5px solid var(--theme-foreground-faint, #ddd);
+  background: var(--theme-background-alt);
+  color: var(--theme-foreground-muted);
+  font-size: 0.7rem; font-weight: 600; font-family: var(--sans-serif);
+  cursor: pointer; transition: all .12s;
+}
+.gcf-chip.active { background: #1DB954; border-color: #1DB954; color: #fff; }
+.gcf-chip:hover:not(.active) { border-color: #1DB95488; color: var(--theme-foreground); }
 </style>
 
 ```js
@@ -119,6 +151,7 @@ const allLangCodes = [...new Set(langYear.map(d => d.language_code))].sort();
 ```js
 const genreLangYear = await FileAttachment("data/genre_language_year.json").json();
 const audioFeatLangYear = await FileAttachment("data/audio_features_lang_year.json").json();
+const audioFeatGenreYear = await FileAttachment("data/audio_features_genre_year.json").json();
 ```
 
 ```js
@@ -142,25 +175,62 @@ const toggleLang = (lang) => {
 };
 ```
 
+```js
+// Right-column disc mode: "langues" = language disc, "genres" = genre selector
+const discMode = Mutable("langues");
+const setDiscMode = (m) => { discMode.value = m; };
+```
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;margin-bottom:1.5rem;">
 <div>
 
-<p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres à afficher. Cliquez sur les segments du disque pour filtrer par langue.</p>
-
 ```js
-const evoMode = view(Inputs.select(
-  ["genres", "tempo", "durée"],
-  {
-    label: "Analyser par",
-    format: d => ({"genres": "Genres", "tempo": "Tempo (BPM)", "durée": "Durée"})[d]
-  }
-));
+{
+  const p = document.createElement("p");
+  p.style.cssText = "font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;";
+  p.textContent = discMode === "langues"
+    ? "Sélectionnez les genres à afficher. Utilisez le filtre Genre (→) pour voir leur répartition par langue."
+    : "Choisissez les genres à droite. Sélectionnez 'Langue' ci-dessous pour faire apparaître le disque des langues ici.";
+  display(p);
+}
 ```
 
 ```js
-const evoGenreFilter = (() => {
+const evoMode = (() => {
+  let current = "genres";
+  const wrap = document.createElement("div");
+  wrap.className = "evo-mode-tabs";
+  const lbl = document.createElement("span");
+  lbl.className = "emt-label";
+  lbl.textContent = "Analyser par";
+  const grp = document.createElement("div");
+  grp.className = "emt-group";
+  const tabs = discMode === "genres"
+    ? [["langue","Langue"],["tempo","Tempo (BPM)"],["durée","Durée"]]
+    : [["genres","Genres"],["tempo","Tempo (BPM)"],["durée","Durée"]];
+  tabs.forEach(([value, label]) => {
+    const btn = document.createElement("button");
+    btn.className = "emt-btn" + (value === current ? " active" : "");
+    btn.textContent = label;
+    btn.type = "button";
+    btn.onclick = () => {
+      current = value;
+      grp.querySelectorAll(".emt-btn").forEach(b => b.classList.toggle("active", b === btn));
+      wrap.dispatchEvent(new CustomEvent("input"));
+    };
+    grp.appendChild(btn);
+  });
+  wrap.append(lbl, grp);
+  Object.defineProperty(wrap, "value", { get: () => current });
+  display(wrap);
+  return Generators.input(wrap);
+})();
+```
+
+```js
+const leftGenreFilter = (() => {
   const el = searchableMultiSelect(allGenresEvo, {label: "Genres", value: defaultGenresEvo});
-  el.style.display = evoMode === "genres" ? "" : "none";
+  el.style.display = (evoMode === "genres" && discMode === "langues") ? "" : "none";
   display(el);
   return Generators.input(el);
 })();
@@ -168,24 +238,78 @@ const evoGenreFilter = (() => {
 
 ```js
 const divideBy = (() => {
-  const el = Inputs.radio(
-    new Map([["—", null], ["Langue", "language_code"], ["Genre", "genre"]]),
-    { value: null, label: "Diviser par" }
-  );
-  el.style.display = evoMode === "genres" ? "" : "none";
+  let opts;
+  if (discMode === "genres" && (evoMode === "tempo" || evoMode === "durée")) {
+    opts = new Map([["—", null], ["Genre", "genre"]]);
+  } else if (discMode === "langues") {
+    opts = new Map([["—", null], ["Langue", "language_code"], ["Genre", "genre"]]);
+  } else {
+    opts = new Map([["—", null], ["Langue", "language_code"]]);
+  }
+  const el = Inputs.radio(opts, { value: null, label: "Diviser par" });
+  el.style.display = (evoMode === "genres" || evoMode === "langue" || evoMode === "tempo" || evoMode === "durée") ? "" : "none";
   display(el);
   return Generators.input(el);
 })();
+```
+
+```js
+{
+  const container = document.createElement("div");
+  if (discMode === "genres" && evoMode === "langue")
+    container.append(langPieChart(langPieData, pieTotal, selectedLangs, toggleLang));
+  display(container);
+}
 ```
 
 </div>
 <div>
 
 ```js
-// Compute pie data from genreLangYear within the evo year range
+// Right column: "Sélectionner par" toggle — Langues / Genres
+{
+  const wrap = document.createElement("div");
+  wrap.className = "evo-mode-tabs";
+  wrap.style.marginBottom = "12px";
+  const lbl = document.createElement("span");
+  lbl.className = "emt-label";
+  lbl.textContent = "Sélectionner par";
+  const grp = document.createElement("div");
+  grp.className = "emt-group";
+  [["langues","Langues"],["genres","Genres"]].forEach(([value, label]) => {
+    const btn = document.createElement("button");
+    btn.className = "emt-btn" + (value === discMode ? " active" : "");
+    btn.textContent = label;
+    btn.type = "button";
+    btn.onclick = () => {
+      grp.querySelectorAll(".emt-btn").forEach(b => b.classList.toggle("active", b === btn));
+      setDiscMode(value);
+    };
+    grp.appendChild(btn);
+  });
+  wrap.append(lbl, grp);
+  display(wrap);
+}
+```
+
+```js
+// Right genre selector — shown when discMode === "genres"
+const rightGenreFilter = (() => {
+  const el = searchableMultiSelect(allGenresEvo, {label: "Genres", value: defaultGenresEvo});
+  el.style.display = discMode === "genres" ? "" : "none";
+  display(el);
+  return Generators.input(el);
+})();
+```
+
+```js
+// Compute pie data — in Genres mode filter by right selector, in Langues mode show all genres
+const genreFilterForDisc = discMode === "langues" ? [] : rightGenreFilter;
 const langPieData = topLangsEvo.map(code => {
   const total = genreLangYear
-    .filter(d => d.language_code === code && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
+    .filter(d => d.language_code === code
+      && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]
+      && (genreFilterForDisc.length === 0 || genreFilterForDisc.includes(d.genre)))
     .reduce((s, d) => s + (+d.track_count), 0);
   return {lang: code, label: getLang(code), count: total, color: getLangColor(code)};
 }).filter(d => d.count > 0);
@@ -193,41 +317,62 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
 ```
 
 ```js
-display(langPieChart(langPieData, pieTotal, selectedLangs, toggleLang));
+{
+  const container = document.createElement("div");
+  if (discMode === "langues")
+    container.append(langPieChart(langPieData, pieTotal, selectedLangs, toggleLang));
+  display(container);
+}
 ```
 
 </div>
 </div>
 
 ```js
-// === Mode GENRES ===
-const evoData_genres = evoMode !== "genres" ? [] : d3.rollups(
-  genreLangYear.filter(d => evoGenreFilter.includes(d.genre) && selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
+const activeGenreFilter = discMode === "langues" ? leftGenreFilter : rightGenreFilter;
+```
+
+```js
+// === Mode GENRES / LANGUE ===
+const evoData_genres = (evoMode !== "genres" && evoMode !== "langue") ? [] : d3.rollups(
+  genreLangYear.filter(d => activeGenreFilter.includes(d.genre) && selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
   v => d3.sum(v, d => +d.track_count),
   d => d.genre,
   d => +d.release_year
 ).flatMap(([genre, years]) => years.map(([year, count]) => ({ genre, release_year: year, track_count: count })));
 
 // === Mode TEMPO ===
-const evoData_tempo = evoMode !== "tempo" ? [] : audioFeatLangYear
-  .filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
-  .map(d => ({ language: d.language_code, release_year: +d.release_year, value: +d.tempo }));
+// By language (discMode=langues) or by genre (discMode=genres)
+const evoData_tempo = evoMode !== "tempo" ? [] :
+  discMode === "genres"
+    ? audioFeatGenreYear
+        .filter(d => activeGenreFilter.includes(d.genre) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
+        .map(d => ({ key: d.genre, release_year: +d.release_year, value: +d.tempo }))
+    : audioFeatLangYear
+        .filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
+        .map(d => ({ key: d.language_code, label: getLang(d.language_code), release_year: +d.release_year, value: +d.tempo }));
 
 // === Mode DURÉE ===
-const evoData_duree = evoMode !== "durée" ? [] : [...d3.rollup(
-  genreLangYear.filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
-  v => d3.mean(v, d => +d.avg_duration_ms) / 60000,
-  d => d.language_code,
-  d => +d.release_year
-)].flatMap(([lang, years]) => [...years].map(([year, val]) => ({ language: lang, release_year: year, value: val })));
+// By language (discMode=langues) or by genre (discMode=genres)
+const evoData_duree = evoMode !== "durée" ? [] :
+  discMode === "genres"
+    ? audioFeatGenreYear
+        .filter(d => activeGenreFilter.includes(d.genre) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
+        .map(d => ({ key: d.genre, release_year: +d.release_year, value: +d.avg_duration_min }))
+    : [...d3.rollup(
+        genreLangYear.filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
+        v => d3.mean(v, d => +d.avg_duration_ms) / 60000,
+        d => d.language_code,
+        d => +d.release_year
+      )].flatMap(([lang, years]) => [...years].map(([year, val]) => ({ key: lang, label: getLang(lang), release_year: year, value: val })));
 
 {
   const palette12 = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c",
                      "#16a085","#d35400","#2980b9","#27ae60","#8e44ad","#c0392b"];
 
-  if (evoMode === "genres") {
+  if (evoMode === "genres" || evoMode === "langue") {
     const rawEvoData = genreLangYear.filter(d =>
-      evoGenreFilter.includes(d.genre) &&
+      activeGenreFilter.includes(d.genre) &&
       selectedLangs.includes(d.language_code) &&
       +d.release_year >= evoYearRange[0] &&
       +d.release_year <= evoYearRange[1]
@@ -321,29 +466,71 @@ const evoData_duree = evoMode !== "durée" ? [] : [...d3.rollup(
     }
 
   } else {
-    const langOrder = topLangsEvo.filter(l => selectedLangs.includes(l));
-    const langColors = langOrder.map(l => getLangColor(l));
+    // Tempo or Durée
     const data = evoMode === "tempo" ? evoData_tempo : evoData_duree;
     const yLabel = evoMode === "tempo" ? "BPM moyen" : "Durée (min)";
-    display(Plot.plot({
-      width,
-      height: 380,
-      marginLeft: 55,
-      marginBottom: 40,
-      y: { label: yLabel, grid: true },
-      color: { domain: langOrder, range: langColors },
-      marks: [
-        Plot.lineY(data, {
-          x: "release_year",
-          y: "value",
-          stroke: "language",
-          curve: "monotone-x",
-          tip: true,
-          title: d => `${getLang(d.language)} · ${d.release_year}\n${d.value.toFixed(evoMode === "tempo" ? 1 : 2)} ${evoMode === "tempo" ? "BPM" : "min"}`
-        }),
-        Plot.ruleY([0])
-      ]
-    }));
+    const unitLabel = evoMode === "tempo" ? "BPM" : "min";
+    const precision = evoMode === "tempo" ? 1 : 2;
+
+    if (discMode === "genres") {
+      // Keys are genre names
+      const genreKeys = [...new Set(data.map(d => d.key))].sort();
+      const extPal = d3.quantize(d3.interpolateRainbow, Math.max(genreKeys.length, 2));
+      const palette12 = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c",
+                         "#16a085","#d35400","#2980b9","#27ae60","#8e44ad","#c0392b"];
+      const gColors = genreKeys.map((g, i) => i < palette12.length ? palette12[i] : extPal[i]);
+
+      if (divideBy === "genre") {
+        // Small multiples par genre
+        display(Plot.plot({
+          width, height: genreKeys.length * 110 + 60,
+          marginLeft: 55, marginRight: 140, marginBottom: 30,
+          fy: { label: null, domain: genreKeys, padding: 0.12 },
+          y: { label: yLabel, grid: true },
+          color: { domain: genreKeys, range: gColors, legend: true, columns: 4 },
+          marks: [
+            Plot.lineY(data, {
+              fy: "key", x: "release_year", y: "value", stroke: "key",
+              curve: "monotone-x", tip: true,
+              title: d => `${d.key} · ${d.release_year}\n${(+d.value).toFixed(precision)} ${unitLabel}`
+            }),
+            Plot.ruleY([0])
+          ]
+        }));
+      } else {
+        // Toutes les lignes genre superposées
+        display(Plot.plot({
+          width, height: 380, marginLeft: 55, marginBottom: 40,
+          y: { label: yLabel, grid: true },
+          color: { domain: genreKeys, range: gColors, legend: true, columns: 4 },
+          marks: [
+            Plot.lineY(data, {
+              x: "release_year", y: "value", stroke: "key",
+              curve: "monotone-x", tip: true,
+              title: d => `${d.key} · ${d.release_year}\n${(+d.value).toFixed(precision)} ${unitLabel}`
+            }),
+            Plot.ruleY([0])
+          ]
+        }));
+      }
+    } else {
+      // Keys are language codes
+      const langOrder = topLangsEvo.filter(l => selectedLangs.includes(l));
+      const langColors = langOrder.map(l => getLangColor(l));
+      display(Plot.plot({
+        width, height: 380, marginLeft: 55, marginBottom: 40,
+        y: { label: yLabel, grid: true },
+        color: { domain: langOrder, range: langColors, tickFormat: c => getLang(c) },
+        marks: [
+          Plot.lineY(data, {
+            x: "release_year", y: "value", stroke: "key",
+            curve: "monotone-x", tip: true,
+            title: d => `${getLang(d.key)} · ${d.release_year}\n${(+d.value).toFixed(precision)} ${unitLabel}`
+          }),
+          Plot.ruleY([0])
+        ]
+      }));
+    }
   }
 }
 ```
