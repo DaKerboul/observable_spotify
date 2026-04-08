@@ -112,6 +112,42 @@ toc: false
   width:16px; height:16px; border-radius:50%;
   background:#1DB954; cursor:pointer; pointer-events:all; border:none;
 }
+.evo-controls {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 320px);
+  gap: 18px;
+  align-items: start;
+  margin: 1rem 0 1.75rem;
+}
+.evo-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.evo-controls-disk {
+  display: flex;
+  justify-content: center;
+}
+.evo-disk-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--theme-background-alt);
+}
+.evo-disk-title {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--theme-foreground-muted);
+}
+@media (max-width: 900px) {
+  .evo-controls {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 
 <div class="nav-cards">
@@ -135,7 +171,14 @@ toc: false
     <span class="nav-card-title">Audio Features</span>
     <span class="nav-card-desc">DNA sonore des genres · énergie, danceability…</span>
   </a>
+  <a class="nav-card" href="./plus">
+    <span class="nav-card-icon">+</span>
+    <span class="nav-card-title">Analyses complementaires</span>
+    <span class="nav-card-desc">Ouvrir la page plus pour explorer des vues supplementaires.</span>
+  </a>
 </div>
+
+
 
 ```js
 const genreYear = await FileAttachment("data/genre_year.json").json();
@@ -249,113 +292,6 @@ function yearSlider({min = 1970, max = 2025, label = "Période"} = {}) {
 }
 ```
 
-## Filtres
-
-```js
-const mainYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
-```
-
-```js
-const filters = view(Inputs.form(
-  {
-    genres: searchableMultiSelect(allGenres, {
-      label: "Genres musicaux",
-      value: allGenres
-    }),
-    langs: Inputs.select(allLangCodes, {
-      label: "Langues",
-      multiple: true,
-      size: 10,
-      format: c => langLabel[c] ?? c,
-      value: allLangCodes
-    })
-  },
-  {
-    template: (inputs) => {
-      const div = document.createElement("div");
-      div.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:0.5rem;";
-      for (const inp of Object.values(inputs)) div.appendChild(inp);
-      return div;
-    }
-  }
-));
-```
-
-```js
-const filteredGenreYear = genreYear.filter(d => filters.genres.includes(d.genre) && +d.release_year >= mainYearRange[0] && +d.release_year <= mainYearRange[1]);
-const filteredLangYear  = langYear.filter(d => filters.langs.includes(d.language_code) && +d.release_year >= mainYearRange[0] && +d.release_year <= mainYearRange[1]);
-```
-
-```js
-// KPI computations
-// Use filteredLangYear for total tracks (one language per track = no double-counting)
-const totalTracks = d3.sum(filteredLangYear, d => +d.track_count);
-
-const byGenre = d3.rollup(filteredGenreYear, v => d3.sum(v, d => +d.track_count), d => d.genre);
-const genreEntries = [...byGenre.entries()].sort((a,b) => b[1]-a[1]);
-const topGenre = genreEntries[0] ?? ["-", 0];
-
-const byLang = d3.rollup(filteredLangYear, v => d3.sum(v, d => +d.track_count), d => d.language_code);
-const langEntries = [...byLang.entries()].sort((a,b) => b[1]-a[1]);
-const topLang = langEntries[0] ?? ["-", 0];
-
-const yearRange = d3.extent(filteredGenreYear, d => +d.release_year);
-```
-
-<div class="kpi-row">
-  <div class="kpi-card">
-    <div class="kpi-label">Titres indexés</div>
-    <div class="kpi-val">${(totalTracks/1e6).toFixed(1)}M</div>
-    <div class="kpi-sub">track_details</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Genre dominant</div>
-    <div class="kpi-val" style="font-size:1.2rem">${topGenre[0]}</div>
-    <div class="kpi-sub">${(topGenre[1]/1e3).toFixed(0)}k titres</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Langue dominante</div>
-    <div class="kpi-val" style="font-size:1.2rem">${langLabel[topLang[0]] ?? topLang[0]}</div>
-    <div class="kpi-sub">${(topLang[1]/1e3).toFixed(0)}k titres</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Période couverte</div>
-    <div class="kpi-val" style="font-size:1.1rem">${yearRange[0]}–${yearRange[1]}</div>
-    <div class="kpi-sub">${yearRange[1]-yearRange[0]+1} ans</div>
-  </div>
-</div>
-
-## Top 20 genres (toutes années)
-
-```js
-const top20 = [...byGenre.entries()]
-  .sort((a,b) => b[1]-a[1])
-  .slice(0, 20)
-  .map(([genre, total]) => ({ genre, total }));
-
-display(Plot.plot({
-  marginLeft: 150,
-  marginRight: 10,
-  width,
-  height: 480,
-  x: { label: "Nombre de titres", tickFormat: "s" },
-  y: { label: null },
-  marks: [
-    Plot.barX(top20, {
-      x: "total",
-      y: "genre",
-      sort: { y: "-x" },
-      fill: "#1DB954",
-      tip: true,
-      title: d => `${d.genre}\n${d.total.toLocaleString()} titres`
-    }),
-    Plot.ruleX([0])
-  ]
-}));
-```
-
-*Encoding note (rough): data item = one genre with its total number of tracks over all years. Mark used = horizontal bar, chosen because bars are the clearest mark for comparing magnitudes across categories. Visual variables: y-position maps genre category, x-length maps number of tracks, and a single green color is used only for grouping this chart as one series.*
-
 ## Évolution des genres (1970 – 2025)
 
 ```js
@@ -409,15 +345,6 @@ const toggleLang = (lang) => {
 
 <p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres à afficher. Cliquez sur les segments du disque pour filtrer par langue.</p>
 
-```js
-const evoMode = view(Inputs.select(
-  ["genres", "tempo", "durée"],
-  {
-    label: "Analyser par",
-    format: d => ({"genres": "Genres", "tempo": "Tempo (BPM)", "durée": "Durée"})[d]
-  }
-));
-```
 
 ```js
 const evoGenreFilter = (() => {
@@ -443,7 +370,7 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
 ```
 
 ```js
-{
+const evoLangDisk = (() => {
   const PW=300, PH=310, cx=150, cy=145;
   const R_sel=141, R_out=133, R_in=97, R_sep=94, R_grv=91, R_lbl=36, R_hole=15;
   const NS="http://www.w3.org/2000/svg";
@@ -486,11 +413,12 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
     return `M${x0},${y0}A${Ro},${Ro} 0 ${f},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${f},0 ${x3},${y3}Z`;
   }
 
-  const MIN_ANGLE = 0.05 * 2 * Math.PI;
-  const rawAngles = langPieData.map(d => (d.count / pieTotal) * 2 * Math.PI);
-  const clampedAngles = rawAngles.map(a => Math.max(a, MIN_ANGLE));
-  const angleScale = (2 * Math.PI) / clampedAngles.reduce((s, a) => s + a, 0);
-  const finalAngles = clampedAngles.map(a => a * angleScale);
+  // Enforce a minimum arc of 10px at the midpoint radius so tiny slices stay visible
+  const minAng = 10 / ((R_in + R_out) / 2);
+  const naturalAngles = langPieData.map(d => (d.count / pieTotal) * 2 * Math.PI);
+  const clampedAngles = naturalAngles.map(a => Math.max(a, minAng));
+  const clampedTotal = clampedAngles.reduce((s, a) => s + a, 0);
+  const finalAngles = clampedAngles.map(a => (a / clampedTotal) * 2 * Math.PI);
 
   let cum=-Math.PI/2;
   const arcData=langPieData.map((d,i)=>{
@@ -548,11 +476,24 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
     leg.appendChild(row);
   });
 
-  const wrap=document.createElement("div"); wrap.append(svg,leg); display(wrap);
-}
+  const wrap=document.createElement("div");
+  wrap.append(svg,leg);
+  return wrap;
+})();
 ```
 
-</div>
+<div style="margin-bottom:14px;">${evoYearRange}</div>
+
+<div class="evo-controls">
+  <div class="evo-controls-panel">
+    <div>${evoGenreFilter}</div>
+  </div>
+  <div class="evo-controls-disk">
+    <div class="evo-disk-card">
+      <div class="evo-disk-title">Langues</div>
+      ${evoLangDisk}
+    </div>
+  </div>
 </div>
 
 ```js
@@ -631,6 +572,10 @@ const evoData_duree = evoMode !== "durée" ? [] : [...d3.rollup(
     }));
   }
 }
+```
+
+```js
+const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
 ```
 
 ```js
