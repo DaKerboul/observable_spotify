@@ -77,7 +77,7 @@ export function langPieChart(langPieData, pieTotal, selectedLangs, toggleLang) {
   // ── Pie segments ───────────────────────────────────────────────────────────
   let cum = -Math.PI / 2;
   const arcData = langPieData.map((d) => {
-    const span = (d.count / pieTotal) * 2 * Math.PI;
+    const span = (2 * Math.PI) / langPieData.length;
     const a0 = cum, a1 = cum + span;
     cum = a1;
     return { ...d, a0, a1, mid: (a0 + a1) / 2, pct: (d.count / pieTotal * 100).toFixed(1) };
