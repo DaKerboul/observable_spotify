@@ -303,46 +303,114 @@ display(langPieChart(langPieData, pieTotal, selectedLangs, toggleLang));
 </div>
 
 ```js
-const evoData = d3.rollups(
-  genreLangYear.filter(d =>
+const divideBy = view(Inputs.radio(
+  new Map([["—", null], ["Langue", "language_code"], ["Genre", "genre"]]),
+  { value: null, label: "Diviser par" }
+));
+```
+
+```js
+{
+  const palette12 = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c",
+                     "#16a085","#d35400","#2980b9","#27ae60","#8e44ad","#c0392b"];
+
+  const rawEvoData = genreLangYear.filter(d =>
     evoGenreFilter.includes(d.genre) &&
     selectedLangs.includes(d.language_code) &&
     +d.release_year >= evoYearRange[0] &&
     +d.release_year <= evoYearRange[1]
-  ),
-  v => d3.sum(v, d => +d.track_count),
-  d => d.genre,
-  d => +d.release_year
-).flatMap(([genre, years]) => years.map(([year, count]) => ({ genre, release_year: year, track_count: count })));
+  );
 
-const evoGenreOrder = [...d3.rollup(evoData, v => d3.sum(v, d => d.track_count), d => d.genre)]
-  .sort((a, b) => b[1] - a[1]).map(d => d[0]);
+  if (!divideBy) {
+    // ── Aggregated stacked area ──────────────────────────────────────────────
+    const evoData = d3.rollups(rawEvoData,
+      v => d3.sum(v, d => +d.track_count),
+      d => d.genre, d => +d.release_year
+    ).flatMap(([genre, years]) => years.map(([year, count]) => ({ genre, release_year: year, track_count: count })));
 
-const palette12 = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c",
-                   "#16a085","#d35400","#2980b9","#27ae60","#8e44ad","#c0392b"];
-const extPalette = d3.quantize(d3.interpolateRainbow, Math.max(evoGenreOrder.length, 1));
-const evoColors  = evoGenreOrder.map((g, i) => i < palette12.length ? palette12[i] : extPalette[i]);
+    const evoGenreOrder = [...d3.rollup(evoData, v => d3.sum(v, d => d.track_count), d => d.genre)]
+      .sort((a, b) => b[1] - a[1]).map(d => d[0]);
+    const extPalette = d3.quantize(d3.interpolateRainbow, Math.max(evoGenreOrder.length, 1));
+    const evoColors  = evoGenreOrder.map((g, i) => i < palette12.length ? palette12[i] : extPalette[i]);
 
-display(Plot.plot({
-  width,
-  height: 380,
-  marginLeft: 55,
-  marginBottom: 40,
-  y: { label: "Titres", grid: true, tickFormat: "s" },
-  color: { domain: evoGenreOrder, range: evoColors, legend: true, columns: 4 },
-  marks: [
-    Plot.areaY(evoData, {
-      x: "release_year",
-      y: "track_count",
-      fill: "genre",
-      order: evoGenreOrder,
-      curve: "monotone-x",
-      tip: true,
-      title: d => `${d.genre} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`
-    }),
-    Plot.ruleY([0])
-  ]
-}));
+    display(Plot.plot({
+      width, height: 380, marginLeft: 55, marginBottom: 40,
+      y: { label: "Titres", grid: true, tickFormat: "s" },
+      color: { domain: evoGenreOrder, range: evoColors, legend: true, columns: 4 },
+      marks: [
+        Plot.areaY(evoData, {
+          x: "release_year", y: "track_count", fill: "genre",
+          order: evoGenreOrder, curve: "monotone-x", tip: true,
+          title: d => `${d.genre} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`
+        }),
+        Plot.ruleY([0])
+      ]
+    }));
+
+  } else if (divideBy === "language_code") {
+    // ── Small multiples par langue ───────────────────────────────────────────
+    const data = d3.rollups(rawEvoData,
+      v => d3.sum(v, d => +d.track_count),
+      d => d.language_code, d => d.genre, d => +d.release_year
+    ).flatMap(([lang, genres]) => genres.flatMap(([genre, years]) =>
+      years.map(([year, count]) => ({ language_code: getLang(lang), genre, release_year: year, track_count: count }))
+    ));
+
+    const evoGenreOrder = [...d3.rollup(data, v => d3.sum(v, d => d.track_count), d => d.genre)]
+      .sort((a, b) => b[1] - a[1]).map(d => d[0]);
+    const extPalette = d3.quantize(d3.interpolateRainbow, Math.max(evoGenreOrder.length, 1));
+    const evoColors  = evoGenreOrder.map((g, i) => i < palette12.length ? palette12[i] : extPalette[i]);
+    const langOrder  = selectedLangs.map(getLang);
+
+    display(Plot.plot({
+      width, height: selectedLangs.length * 110 + 60,
+      marginLeft: 55, marginBottom: 30,
+      fy: { label: null, domain: langOrder, padding: 0.12 },
+      y: { label: "Titres", grid: true, tickFormat: "s" },
+      color: { domain: evoGenreOrder, range: evoColors, legend: true, columns: 4 },
+      marks: [
+        Plot.areaY(data, {
+          fy: "language_code",
+          x: "release_year", y: "track_count", fill: "genre",
+          order: evoGenreOrder, curve: "monotone-x", tip: true,
+          title: d => `${d.genre} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`
+        }),
+        Plot.ruleY([0])
+      ]
+    }));
+
+  } else {
+    // ── Small multiples par genre ────────────────────────────────────────────
+    const data = d3.rollups(rawEvoData,
+      v => d3.sum(v, d => +d.track_count),
+      d => d.genre, d => d.language_code, d => +d.release_year
+    ).flatMap(([genre, langs]) => langs.flatMap(([lang, years]) =>
+      years.map(([year, count]) => ({ genre, language_code: lang, release_year: year, track_count: count }))
+    ));
+
+    const genreOrder  = [...d3.rollup(data, v => d3.sum(v, d => d.track_count), d => d.genre)]
+      .sort((a, b) => b[1] - a[1]).map(d => d[0]);
+    const langColors  = selectedLangs.map(c => getLangColor(c));
+
+    display(Plot.plot({
+      width, height: genreOrder.length * 110 + 60,
+      marginLeft: 55, marginBottom: 30,
+      fy: { label: null, domain: genreOrder, padding: 0.12 },
+      y: { label: "Titres", grid: true, tickFormat: "s" },
+      color: { domain: selectedLangs, range: langColors, legend: true, columns: 4,
+               tickFormat: c => getLang(c) },
+      marks: [
+        Plot.areaY(data, {
+          fy: "genre",
+          x: "release_year", y: "track_count", fill: "language_code",
+          order: selectedLangs, curve: "monotone-x", tip: true,
+          title: d => `${getLang(d.language_code)} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`
+        }),
+        Plot.ruleY([0])
+      ]
+    }));
+  }
+}
 ```
 
 ```js
