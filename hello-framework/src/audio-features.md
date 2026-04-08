@@ -234,15 +234,8 @@ display(Plot.plot({
 ## Audio features par langue (1970–2025)
 
 ```js
-const langMeta = {
-  en:{label:"Anglais",  color:"#1a75cc"}, es:{label:"Espagnol",  color:"#e84040"},
-  fr:{label:"Français", color:"#9b59b6"}, de:{label:"Allemand",  color:"#f5a623"},
-  pt:{label:"Portugais",color:"#e91e8c"}, ja:{label:"Japonais",  color:"#16a085"},
-  it:{label:"Italien",  color:"#d35400"}, ko:{label:"Coréen",    color:"#2980b9"},
-};
+import { langMeta, getLang, getLangColor as getColor } from "./utils/langMeta.js";
 const mainLangs = Object.keys(langMeta);
-const getLang  = c => langMeta[c]?.label ?? c.toUpperCase();
-const getColor = c => langMeta[c]?.color ?? "#888";
 ```
 
 ```js

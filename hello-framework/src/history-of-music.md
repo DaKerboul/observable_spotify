@@ -82,22 +82,7 @@ const topGenresQ = [...d3.rollup(rawData, v => d3.sum(v, d=>+d.track_count), d=>
 const topLangsQ = [...d3.rollup(rawData, v=>d3.sum(v,d=>+d.track_count), d=>d.language_code).entries()]
   .sort((a,b)=>b[1]-a[1]).slice(0,10).map(d=>d[0]);
 
-const langMeta = {
-  en:{label:"Anglais",   color:"#1a75cc"},
-  es:{label:"Espagnol",  color:"#e84040"},
-  fr:{label:"Français",  color:"#9b59b6"},
-  de:{label:"Allemand",  color:"#f5a623"},
-  pt:{label:"Portugais", color:"#e91e8c"},
-  ja:{label:"Japonais",  color:"#16a085"},
-  it:{label:"Italien",   color:"#d35400"},
-  ko:{label:"Coréen",    color:"#2980b9"},
-  tr:{label:"Turc",      color:"#8e44ad"},
-  ru:{label:"Russe",     color:"#c0392b"},
-  pl:{label:"Polonais",  color:"#27ae60"},
-  nl:{label:"Néerlandais",color:"#1abc9c"},
-};
-const getLang = code => langMeta[code]?.label ?? code.toUpperCase();
-const getLangColor = code => langMeta[code]?.color ?? "#888";
+import { langMeta, getLang, getLangColor } from "./utils/langMeta.js";
 ```
 
 ```js
