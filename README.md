@@ -13,8 +13,8 @@ Visualization dashboard built with [Observable Framework](https://observablehq.c
 **Live demo:** https://arussac-perso.github.io/observable_spotify/history-of-music
 
 ## Pages
-- **Spotify Analytics** — bar charts and stacked area by genre/language with dual-range year filter.
-- **History of Music** — stacked area chart + donut chart showing genre evolution over time, filterable by language, period, and genre.
+- **Spotify Analytics** - bar charts and stacked area by genre/language with dual-range year filter.
+- **History of Music** - stacked area chart + donut chart showing genre evolution over time, filterable by language, period, and genre.
 
 ## Run locally
 ```
@@ -44,7 +44,7 @@ A typical Framework project looks like this:
 └─ README.md
 ```
 
-**`src`** - This is the “source root” — where your source files live. Pages go here. Each page is a Markdown file. Observable Framework uses [file-based routing](https://observablehq.com/framework/project-structure#routing), which means that the name of the file controls where the page is served. You can create as many pages as you like. Use folders to organize your pages.
+**`src`** - This is the “source root” - where your source files live. Pages go here. Each page is a Markdown file. Observable Framework uses [file-based routing](https://observablehq.com/framework/project-structure#routing), which means that the name of the file controls where the page is served. You can create as many pages as you like. Use folders to organize your pages.
 
 **`src/index.md`** - This is the home page for your app. You can have as many additional pages as you’d like, but you should always have a home page, too.
 

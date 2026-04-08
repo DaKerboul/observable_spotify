@@ -1,4 +1,4 @@
-# Database Schema — Spotify Analytics
+# Database Schema - Spotify Analytics
 
 **Host:** `kerboul.me:15433`  
 **Database:** `spotify`  
@@ -8,7 +8,7 @@
 
 ## Tables
 
-### `track_details` — 9 879 454 rows (~2.4 GB)
+### `track_details` - 9 879 454 rows (~2.4 GB)
 
 Individual track records with audio features and metadata.
 
@@ -42,7 +42,7 @@ Individual track records with audio features and metadata.
 
 ---
 
-### `agg_genre_language_year` — 70 615 rows (~8 MB)
+### `agg_genre_language_year` - 70 615 rows (~8 MB)
 
 Pre-aggregated counts and averages per (genre, language, year).
 
@@ -58,9 +58,9 @@ Pre-aggregated counts and averages per (genre, language, year).
 
 ---
 
-### `agg_genre_year` — 28 861 rows (~3 MB)
+### `agg_genre_year` - 28 861 rows (~3 MB)
 
-Pre-aggregated counts and averages per (genre, year) — no language split.
+Pre-aggregated counts and averages per (genre, year) - no language split.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -73,7 +73,7 @@ Pre-aggregated counts and averages per (genre, year) — no language split.
 
 ---
 
-### `agg_language_year` — 337 rows (~88 kB)
+### `agg_language_year` - 337 rows (~88 kB)
 
 Pre-aggregated counts and averages per (language, year).
 

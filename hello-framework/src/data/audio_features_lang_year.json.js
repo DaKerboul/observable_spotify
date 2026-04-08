@@ -1,6 +1,6 @@
 import { query } from "./_db.js";
 
-// TABLESAMPLE SYSTEM(15) for speed — averages are statistically stable at this scale
+// TABLESAMPLE SYSTEM(15) for speed - averages are statistically stable at this scale
 const rows = await query(`
   SELECT
     language_code,

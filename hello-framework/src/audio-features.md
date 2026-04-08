@@ -61,7 +61,7 @@ const audioGenre = await FileAttachment("data/audio_features_genre.json").json()
 Les 4 axes principaux de l'identité sonore d'un titre, moyennés sur l'ensemble du catalogue.
 
 <div class="chart-card">
-<h3>Danceability · Energy · Valence · Acousticness — index 0→1</h3>
+<h3>Danceability · Energy · Valence · Acousticness - index 0→1</h3>
 
 ```js
 const features4 = [
@@ -320,7 +320,7 @@ display(Plot.plot({
 ## Profil radar par genre (top 8)
 
 ```js
-// Radar chart — manual SVG (Observable Plot ne supporte pas nativement le radar)
+// Radar chart - manual SVG (Observable Plot ne supporte pas nativement le radar)
 const radarGenres = audioGenre.slice(0,8);
 const radarFeats = ["danceability","energy","valence","acousticness","speechiness","instrumentalness"];
 const radarLabels = ["Dance","Energy","Valence","Acoustic","Speech","Instrumental"];

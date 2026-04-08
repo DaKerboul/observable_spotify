@@ -18,7 +18,7 @@ try {
     if (!(key in process.env)) process.env[key] = val;
   }
 } catch (_) {
-  // .env not present — rely on shell environment
+  // .env not present - rely on shell environment
 }
 
 const require = createRequire(import.meta.url);

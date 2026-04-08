@@ -132,7 +132,7 @@ const yearRange = view((() => {
 ```
 
 ```js
-// ② Langues — sélection gérée par le CD interactif ci-dessous
+// ② Langues - sélection gérée par le CD interactif ci-dessous
 const selectedLangs = Mutable(["en","fr","es","de"]);
 const toggleLang = (lang) => {
   const cur = selectedLangs.value;
@@ -273,7 +273,7 @@ display(Plot.plot({
 <h3>② Langues · cliquer les segments pour sélectionner · ${yearRange[0]}–${yearRange[1]}</h3>
 
 ```js
-// CD interactif — Language selector
+// CD interactif - Language selector
 {
   const PW=300, PH=310, cx=150, cy=145;
   const R_sel=141, R_out=133, R_in=97, R_sep=94, R_grv=91, R_lbl=36, R_hole=15;
@@ -330,7 +330,7 @@ display(Plot.plot({
     return {...d,a0,a1,mid:(a0+a1)/2,pct:(d.count/pieTotal*100).toFixed(1)};
   });
 
-  // Language segments — outer ring (clickable)
+  // Language segments - outer ring (clickable)
   arcData.forEach(a=>{
     const on=selectedLangs.includes(a.lang);
     const Ro=on?R_sel:R_out;
@@ -415,10 +415,10 @@ const totalSel=sorted.reduce((s,[,v])=>s+v,0);
 if(sorted.length>0){
   const detailDiv=document.createElement("div"); detailDiv.className="detail-grid";
   [
-    {k:"Langues",v:selectedLangs.map(getLang).join(", ")||"—"},
+    {k:"Langues",v:selectedLangs.map(getLang).join(", ")||"-"},
     {k:"Période",v:`${yearRange[0]} – ${yearRange[1]}`},
     {k:"Genre dominant",v:sorted[0][0]},
-    {k:"Part dom.",v:totalSel>0 ? (sorted[0][1]/totalSel*100).toFixed(1)+" %" : "—"},
+    {k:"Part dom.",v:totalSel>0 ? (sorted[0][1]/totalSel*100).toFixed(1)+" %" : "-"},
     {k:"Titres (dom.)",v:sorted[0][1].toLocaleString()},
     {k:"Total titres",v:totalSel.toLocaleString()},
   ].forEach(({k,v})=>{

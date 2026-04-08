@@ -1,6 +1,6 @@
 import { query } from "./_db.js";
 
-// TABLESAMPLE SYSTEM(15) : ~1.5M rows instead of 9.8M — statistically equivalent averages
+// TABLESAMPLE SYSTEM(15) : ~1.5M rows instead of 9.8M - statistically equivalent averages
 const rows = await query(`
   SELECT
     release_year,

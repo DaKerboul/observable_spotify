@@ -266,7 +266,7 @@ const summary = allLangs.slice(0,15).map(code => {
   const avgDur = d3.mean(rows, d=>+d.avg_duration_ms);
   const popTrend = rows.length > 4
     ? (+(rows[rows.length-1].avg_track_popularity) - +(rows[0].avg_track_popularity)).toFixed(1)
-    : "—";
+    : "-";
   return {code, label:getLang(code), total, avgDur, popTrend, color:getColor(code)};
 }).filter(Boolean);
 
@@ -283,8 +283,8 @@ summary.forEach(d=>{
   tr.innerHTML=`
     <td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${d.color};margin-right:6px;vertical-align:middle;"></span>${d.label}</td>
     <td><span class="bar-inline" style="width:${(d.total/maxTotal*100).toFixed(0)}px;background:${d.color};"></span>${d.total.toLocaleString()}</td>
-    <td>${d.avgDur ? (d.avgDur/60000).toFixed(2)+" min" : "—"}</td>
-    <td style="color:${d.popTrend>0?"#1DB954":d.popTrend<0?"#e84040":"var(--theme-foreground-muted)"}">${d.popTrend!=="—"?(d.popTrend>0?"+":"")+d.popTrend:d.popTrend}</td>
+    <td>${d.avgDur ? (d.avgDur/60000).toFixed(2)+" min" : "-"}</td>
+    <td style="color:${d.popTrend>0?"#1DB954":d.popTrend<0?"#e84040":"var(--theme-foreground-muted)"}">${d.popTrend!=="-"?(d.popTrend>0?"+":"")+d.popTrend:d.popTrend}</td>
   `;
   tbody.appendChild(tr);
 });
