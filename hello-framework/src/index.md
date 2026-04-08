@@ -95,6 +95,23 @@ toc: false
   color: var(--theme-foreground-muted);
   margin-top: 2px;
 }
+.drs-wrap { position:relative; height:36px; width:100%; min-width:220px; }
+.drs-track { position:absolute; left:0; right:0; top:17px; height:2px; background:#ccc; border-radius:2px; }
+.drs-fill  { position:absolute; top:17px; height:2px; background:#1DB954; }
+.drs-wrap input[type=range] {
+  -webkit-appearance:none; appearance:none;
+  position:absolute; left:0; width:100%; top:0;
+  background:transparent; pointer-events:none; margin:0; height:36px;
+}
+.drs-wrap input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+  background:#1DB954; cursor:pointer; pointer-events:all;
+  border:none; box-shadow:0 1px 4px #0003; margin-top:-7px;
+}
+.drs-wrap input[type=range]::-moz-range-thumb {
+  width:16px; height:16px; border-radius:50%;
+  background:#1DB954; cursor:pointer; pointer-events:all; border:none;
+}
 </style>
 
 <div class="nav-cards">
@@ -196,9 +213,47 @@ function searchableMultiSelect(items, {label = "", format = d => d, value = item
   wrapper.value = [...selected];
   return wrapper;
 }
+
+// Reusable double-range year slider
+function yearSlider({min = 1970, max = 2025, label = "Période"} = {}) {
+  const c = document.createElement("div");
+  c.style.cssText = "display:flex;flex-direction:column;gap:4px;min-width:240px;font-family:var(--sans-serif);font-size:13px;";
+  const top = document.createElement("div");
+  top.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+  const lbl = document.createElement("span");
+  lbl.style.cssText = "font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--theme-foreground-muted)";
+  lbl.textContent = label;
+  const out = document.createElement("span");
+  out.style.cssText = "font-weight:600;color:#1DB954;font-size:13px;";
+  out.textContent = `${min} – ${max}`;
+  top.append(lbl, out);
+  const tw = document.createElement("div"); tw.className = "drs-wrap";
+  const track = document.createElement("div"); track.className = "drs-track";
+  const fill = document.createElement("div"); fill.className = "drs-fill";
+  const lo = document.createElement("input"); lo.type = "range"; lo.min = min; lo.max = max; lo.value = min;
+  const hi = document.createElement("input"); hi.type = "range"; hi.min = min; hi.max = max; hi.value = max;
+  function upd() {
+    const l = Math.min(+lo.value, +hi.value), h = Math.max(+lo.value, +hi.value);
+    fill.style.left = (l - min) / (max - min) * 100 + "%";
+    fill.style.width = (h - l) / (max - min) * 100 + "%";
+    out.textContent = `${l} – ${h}`;
+    c.value = [l, h];
+    c.dispatchEvent(new Event("input", {bubbles: true}));
+  }
+  lo.addEventListener("input", () => { if (+lo.value > +hi.value) lo.value = hi.value; upd(); });
+  hi.addEventListener("input", () => { if (+hi.value < +lo.value) hi.value = lo.value; upd(); });
+  tw.append(track, fill, lo, hi);
+  c.append(top, tw);
+  upd();
+  return c;
+}
 ```
 
 ## Filtres
+
+```js
+const mainYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
+```
 
 ```js
 const filters = view(Inputs.form(
@@ -227,8 +282,8 @@ const filters = view(Inputs.form(
 ```
 
 ```js
-const filteredGenreYear = genreYear.filter(d => filters.genres.includes(d.genre));
-const filteredLangYear  = langYear.filter(d => filters.langs.includes(d.language_code));
+const filteredGenreYear = genreYear.filter(d => filters.genres.includes(d.genre) && +d.release_year >= mainYearRange[0] && +d.release_year <= mainYearRange[1]);
+const filteredLangYear  = langYear.filter(d => filters.langs.includes(d.language_code) && +d.release_year >= mainYearRange[0] && +d.release_year <= mainYearRange[1]);
 ```
 
 ```js
@@ -317,6 +372,10 @@ const defaultGenresEvo = [...d3.rollup(genreLangYear, v => d3.sum(v, d => +d.tra
 <p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres et langues à afficher dans le graphique d'évolution. Par défaut : top 12 genres, toutes les langues.</p>
 
 ```js
+const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
+```
+
+```js
 const evoFilters = view(Inputs.form(
   {
     genres: searchableMultiSelect(allGenresEvo, {
@@ -345,7 +404,7 @@ const evoFilters = view(Inputs.form(
 ```js
 // Aggregate: sum track_count by genre+year after filtering on selected genres & languages
 const evoData = d3.rollups(
-  genreLangYear.filter(d => evoFilters.genres.includes(d.genre) && evoFilters.langs.includes(d.language_code)),
+  genreLangYear.filter(d => evoFilters.genres.includes(d.genre) && evoFilters.langs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
   v => d3.sum(v, d => +d.track_count),
   d => d.genre,
   d => +d.release_year
