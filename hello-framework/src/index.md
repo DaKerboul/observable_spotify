@@ -112,73 +112,7 @@ toc: false
   width:16px; height:16px; border-radius:50%;
   background:#1DB954; cursor:pointer; pointer-events:all; border:none;
 }
-.evo-controls {
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(280px, 320px);
-  gap: 18px;
-  align-items: start;
-  margin: 1rem 0 1.75rem;
-}
-.evo-controls-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.evo-controls-disk {
-  display: flex;
-  justify-content: center;
-}
-.evo-disk-card {
-  width: 100%;
-  max-width: 320px;
-  padding: 14px;
-  border-radius: 12px;
-  background: var(--theme-background-alt);
-}
-.evo-disk-title {
-  margin-bottom: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--theme-foreground-muted);
-}
-@media (max-width: 900px) {
-  .evo-controls {
-    grid-template-columns: 1fr;
-  }
-}
 </style>
-
-<div class="nav-cards">
-  <a class="nav-card" href="./">
-    <span class="nav-card-icon">📊</span>
-    <span class="nav-card-title">Vue d'ensemble</span>
-    <span class="nav-card-desc">Genres dominants, évolution globale</span>
-  </a>
-  <a class="nav-card" href="./history-of-music">
-    <span class="nav-card-icon">🎵</span>
-    <span class="nav-card-title">History of Music</span>
-    <span class="nav-card-desc">Genres × langues × temps · stacked area</span>
-  </a>
-  <a class="nav-card" href="./language-trends">
-    <span class="nav-card-icon">🌍</span>
-    <span class="nav-card-title">Tendances par langue</span>
-    <span class="nav-card-desc">Volume, durée par langue</span>
-  </a>
-  <a class="nav-card" href="./audio-features">
-    <span class="nav-card-icon">🎛️</span>
-    <span class="nav-card-title">Audio Features</span>
-    <span class="nav-card-desc">DNA sonore des genres · énergie, danceability…</span>
-  </a>
-  <a class="nav-card" href="./plus">
-    <span class="nav-card-icon">+</span>
-    <span class="nav-card-title">Analyses complementaires</span>
-    <span class="nav-card-desc">Ouvrir la page plus pour explorer des vues supplementaires.</span>
-  </a>
-</div>
-
-
 
 ```js
 const genreYear = await FileAttachment("data/genre_year.json").json();
@@ -345,6 +279,15 @@ const toggleLang = (lang) => {
 
 <p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres à afficher. Cliquez sur les segments du disque pour filtrer par langue.</p>
 
+```js
+const evoMode = view(Inputs.select(
+  ["genres", "tempo", "durée"],
+  {
+    label: "Analyser par",
+    format: d => ({"genres": "Genres", "tempo": "Tempo (BPM)", "durée": "Durée"})[d]
+  }
+));
+```
 
 ```js
 const evoGenreFilter = (() => {
@@ -370,7 +313,7 @@ const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
 ```
 
 ```js
-const evoLangDisk = (() => {
+{
   const PW=300, PH=310, cx=150, cy=145;
   const R_sel=141, R_out=133, R_in=97, R_sep=94, R_grv=91, R_lbl=36, R_hole=15;
   const NS="http://www.w3.org/2000/svg";
@@ -413,12 +356,11 @@ const evoLangDisk = (() => {
     return `M${x0},${y0}A${Ro},${Ro} 0 ${f},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${f},0 ${x3},${y3}Z`;
   }
 
-  // Enforce a minimum arc of 10px at the midpoint radius so tiny slices stay visible
-  const minAng = 10 / ((R_in + R_out) / 2);
-  const naturalAngles = langPieData.map(d => (d.count / pieTotal) * 2 * Math.PI);
-  const clampedAngles = naturalAngles.map(a => Math.max(a, minAng));
-  const clampedTotal = clampedAngles.reduce((s, a) => s + a, 0);
-  const finalAngles = clampedAngles.map(a => (a / clampedTotal) * 2 * Math.PI);
+  const MIN_ANGLE = 0.05 * 2 * Math.PI;
+  const rawAngles = langPieData.map(d => (d.count / pieTotal) * 2 * Math.PI);
+  const clampedAngles = rawAngles.map(a => Math.max(a, MIN_ANGLE));
+  const angleScale = (2 * Math.PI) / clampedAngles.reduce((s, a) => s + a, 0);
+  const finalAngles = clampedAngles.map(a => a * angleScale);
 
   let cum=-Math.PI/2;
   const arcData=langPieData.map((d,i)=>{
@@ -476,24 +418,11 @@ const evoLangDisk = (() => {
     leg.appendChild(row);
   });
 
-  const wrap=document.createElement("div");
-  wrap.append(svg,leg);
-  return wrap;
-})();
+  const wrap=document.createElement("div"); wrap.append(svg,leg); display(wrap);
+}
 ```
 
-<div style="margin-bottom:14px;">${evoYearRange}</div>
-
-<div class="evo-controls">
-  <div class="evo-controls-panel">
-    <div>${evoGenreFilter}</div>
-  </div>
-  <div class="evo-controls-disk">
-    <div class="evo-disk-card">
-      <div class="evo-disk-title">Langues</div>
-      ${evoLangDisk}
-    </div>
-  </div>
+</div>
 </div>
 
 ```js
@@ -572,10 +501,6 @@ const evoData_duree = evoMode !== "durée" ? [] : [...d3.rollup(
     }));
   }
 }
-```
-
-```js
-const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
 ```
 
 ```js
