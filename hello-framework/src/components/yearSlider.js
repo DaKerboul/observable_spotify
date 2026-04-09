@@ -1,4 +1,4 @@
-// Inject CSS once per page load
+// Inject CSS once per page load (handles the double-range track/fill/thumb styles)
 const STYLE_ID = "year-slider-style";
 if (typeof document !== "undefined" && !document.getElementById(STYLE_ID)) {
   const s = document.createElement("style");
@@ -48,9 +48,8 @@ export function yearSlider({ min = 1970, max = 2025, label = "Période" } = {}) 
   const tw    = document.createElement("div"); tw.className = "drs-wrap";
   const track = document.createElement("div"); track.className = "drs-track";
   const fill  = document.createElement("div"); fill.className = "drs-fill";
-
-  const lo = document.createElement("input"); lo.type = "range"; lo.min = min; lo.max = max; lo.value = min;
-  const hi = document.createElement("input"); hi.type = "range"; hi.min = min; hi.max = max; hi.value = max;
+  const lo    = document.createElement("input"); lo.type = "range"; lo.min = min; lo.max = max; lo.value = min;
+  const hi    = document.createElement("input"); hi.type = "range"; hi.min = min; hi.max = max; hi.value = max;
 
   function update() {
     const l = Math.min(+lo.value, +hi.value);

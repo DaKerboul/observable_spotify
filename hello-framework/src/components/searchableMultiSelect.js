@@ -1,8 +1,8 @@
 /**
- * Searchable multi-select with checkboxes and select-all / deselect-all buttons.
+ * Searchable multi-select with checkboxes and select-all / deselect-all / reset buttons.
  * Returns an Observable-compatible input element with `.value = string[]`.
  */
-export function searchableMultiSelect(items, { label = "", format = (d) => d, value = items } = {}) {
+export function searchableMultiSelect(items, { label = "", format = (d) => d, value = items, max = Infinity } = {}) {
   const selected = new Set(value);
 
   const wrapper = document.createElement("fieldset");
@@ -31,6 +31,7 @@ export function searchableMultiSelect(items, { label = "", format = (d) => d, va
   btnReset.style.cssText = btnStyle;
   btnRow.append(btnAll, btnNone, btnReset);
   wrapper.appendChild(btnRow);
+  wrapper.setBtnAllVisible = (visible) => { btnAll.style.display = visible ? "" : "none"; };
 
   const list = document.createElement("div");
   list.style.cssText = "max-height:200px;overflow-y:auto;";
@@ -49,10 +50,27 @@ export function searchableMultiSelect(items, { label = "", format = (d) => d, va
   });
   wrapper.appendChild(list);
 
+  function updateDisabledState() {
+    const count = checkboxes.filter(({ checkbox }) => checkbox.checked).length;
+    const atLimit = max < Infinity && count >= max;
+    for (const { checkbox, label } of checkboxes) {
+      if (!checkbox.checked) {
+        checkbox.disabled = atLimit;
+        label.style.opacity = atLimit ? "0.4" : "";
+        label.style.cursor  = atLimit ? "not-allowed" : "pointer";
+      } else {
+        checkbox.disabled = false;
+        label.style.opacity = "";
+        label.style.cursor  = "pointer";
+      }
+    }
+  }
+
   function emit() {
     selected.clear();
     for (const { checkbox, item } of checkboxes) if (checkbox.checked) selected.add(item);
     wrapper.value = [...selected];
+    updateDisabledState();
     wrapper.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
@@ -69,10 +87,19 @@ export function searchableMultiSelect(items, { label = "", format = (d) => d, va
   for (const { checkbox } of checkboxes) checkbox.addEventListener("change", emit);
 
   const defaultSet = new Set(value);
-
   btnAll.addEventListener("click",   () => { for (const { checkbox } of visibleCheckboxes()) checkbox.checked = true;  emit(); });
   btnNone.addEventListener("click",  () => { for (const { checkbox } of visibleCheckboxes()) checkbox.checked = false; emit(); });
   btnReset.addEventListener("click", () => { for (const { checkbox, item } of checkboxes) checkbox.checked = defaultSet.has(item); emit(); });
+
+  updateDisabledState();
+
+  wrapper.setMax = (newMax) => { max = newMax; updateDisabledState(); };
+
+  wrapper.setValue = (newItems) => {
+    const s = new Set(newItems);
+    for (const { checkbox, item } of checkboxes) checkbox.checked = s.has(item);
+    emit();
+  };
 
   wrapper.value = [...selected];
   return wrapper;

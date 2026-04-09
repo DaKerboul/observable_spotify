@@ -1,7 +1,8 @@
 /**
- * Language distribution donut/pie chart.
+ * Language distribution vinyl-style donut chart.
+ * Uses proportional arc angles with a minimum-size clamp so tiny slices stay visible.
  *
- * @param {Array}    langPieData   - [{lang, label, count, color}, ...]
+ * @param {Array}    langPieData   - [{ lang, label, count, color }, ...]
  * @param {number}   pieTotal      - sum of all counts
  * @param {string[]} selectedLangs - currently selected language codes
  * @param {Function} toggleLang    - (langCode: string) => void
@@ -9,7 +10,7 @@
  */
 export function langPieChart(langPieData, pieTotal, selectedLangs, toggleLang) {
   const PW = 300, PH = 310, cx = 150, cy = 145;
-  const R_sel = 141, R_out = 133, R_in = 97, R_sep = 94, R_grv = 91, R_lbl = 36, R_hole = 15;
+  const R_sel = 141, R_out = 133, R_in = 97, R_sep = 94, R_grv = 91, R_lbl = 36, R_hole = 25;
   const NS = "http://www.w3.org/2000/svg";
 
   const svg = document.createElementNS(NS, "svg");
@@ -74,15 +75,17 @@ export function langPieChart(langPieData, pieTotal, selectedLangs, toggleLang) {
     return `M${x0},${y0}A${Ro},${Ro} 0 ${lf},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${lf},0 ${x3},${y3}Z`;
   }
 
-  // ── Pie segments ───────────────────────────────────────────────────────────
+  // ── Equal-size arc angles for uniform clickability ──────────────────────────
+  const finalAngles = langPieData.map(() => (2 * Math.PI) / langPieData.length);
+
   let cum = -Math.PI / 2;
-  const arcData = langPieData.map((d) => {
-    const span = (2 * Math.PI) / langPieData.length;
-    const a0 = cum, a1 = cum + span;
+  const arcData = langPieData.map((d, i) => {
+    const a = finalAngles[i], a0 = cum, a1 = cum + a;
     cum = a1;
     return { ...d, a0, a1, mid: (a0 + a1) / 2, pct: (d.count / pieTotal * 100).toFixed(1) };
   });
 
+  // ── Pie segments ───────────────────────────────────────────────────────────
   arcData.forEach((a) => {
     const on = selectedLangs.includes(a.lang);
     const Ro = on ? R_sel : R_out;
@@ -140,35 +143,20 @@ export function langPieChart(langPieData, pieTotal, selectedLangs, toggleLang) {
     svg.appendChild(ring);
   }
 
-  const hi = document.createElementNS(NS, "path");
-  hi.setAttribute("d", arcPath(-1.9, -0.45, R_grv - 5, R_lbl + 7));
-  hi.setAttribute("fill", "rgba(255,255,255,0.055)");
-  svg.appendChild(hi);
+  const hlPath = document.createElementNS(NS, "path");
+  hlPath.setAttribute("d", arcPath(-1.9, -0.45, R_grv - 5, R_lbl + 7));
+  hlPath.setAttribute("fill", "rgba(255,255,255,0.055)");
+  svg.appendChild(hlPath);
 
-  // ── Center label disk ──────────────────────────────────────────────────────
-  const lblDisk = document.createElementNS(NS, "circle");
-  lblDisk.setAttribute("cx", cx); lblDisk.setAttribute("cy", cy); lblDisk.setAttribute("r", R_lbl); lblDisk.setAttribute("fill", "#1DB954");
-  svg.appendChild(lblDisk);
-
-  const ct = document.createElementNS(NS, "text");
-  ct.setAttribute("x", cx); ct.setAttribute("y", cy - 5);
-  ct.setAttribute("text-anchor", "middle"); ct.setAttribute("dominant-baseline", "middle");
-  ct.setAttribute("font-size", "10"); ct.setAttribute("font-weight", "700");
-  ct.setAttribute("font-family", "var(--sans-serif)"); ct.setAttribute("fill", "#fff");
-  ct.textContent = pieTotal.toLocaleString();
-  //svg.appendChild(ct);
-
-  const cst = document.createElementNS(NS, "text");
-  cst.setAttribute("x", cx); cst.setAttribute("y", cy + 8);
-  cst.setAttribute("text-anchor", "middle"); cst.setAttribute("font-size", "7");
-  cst.setAttribute("font-family", "var(--sans-serif)"); cst.setAttribute("fill", "rgba(255,255,255,0.75)");
-  //cst.textContent = "titres";
-  svg.appendChild(cst);
-
+  // ── Center hole ────────────────────────────────────────────────────────────
   const hole = document.createElementNS(NS, "circle");
   hole.setAttribute("cx", cx); hole.setAttribute("cy", cy); hole.setAttribute("r", R_hole);
-  hole.setAttribute("fill", "var(--theme-background)"); hole.setAttribute("stroke", "#666"); hole.setAttribute("stroke-width", "0.5");
+  hole.setAttribute("fill", "#0d0d1a"); hole.setAttribute("stroke", "#555"); hole.setAttribute("stroke-width", "1.5");
   svg.appendChild(hole);
+  const holeRing = document.createElementNS(NS, "circle");
+  holeRing.setAttribute("cx", cx); holeRing.setAttribute("cy", cy); holeRing.setAttribute("r", R_hole - 7);
+  holeRing.setAttribute("fill", "none"); holeRing.setAttribute("stroke", "rgba(255,255,255,0.22)"); holeRing.setAttribute("stroke-width", "0.9");
+  svg.appendChild(holeRing);
 
   // ── Legend ────────────────────────────────────────────────────────────────
   const legend = document.createElement("div");
