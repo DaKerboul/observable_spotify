@@ -1,4 +1,4 @@
-# Spotify Analytics � Observable Framework
+# Spotify Analytics - Observable Framework
 
 Visualization dashboard built with [Observable Framework](https://observablehq.com/framework/) exploring a Spotify dataset (genres, languages, release years).
 
