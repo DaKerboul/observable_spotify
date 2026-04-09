@@ -53,6 +53,44 @@ toc: false
 .tab-btn.active { background: #1DB954; border-color: #1DB954; color: #fff; }
 .tab-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .tab-btn:disabled:hover { border-color: var(--theme-foreground-faint, #ddd); color: var(--theme-foreground-muted); }
+
+/* ── Popup analyse approfondie ─────────────────────────────────────────── */
+.audio-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.52);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .15s ease;
+}
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+.audio-modal {
+  background: var(--theme-background);
+  border-radius: 16px; padding: 28px 28px 20px;
+  width: min(92vw, 820px); max-height: 88vh; overflow: auto;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+  position: relative;
+}
+.audio-modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.audio-modal-title { font-weight: 800; font-size: 1.08rem; margin: 0; font-family: var(--sans-serif); }
+.audio-modal-sub { font-size: 0.78rem; color: var(--theme-foreground-muted); margin-top: 3px; font-family: var(--sans-serif); }
+.audio-close-btn {
+  background: none; border: none; font-size: 1.5rem; line-height: 1;
+  cursor: pointer; color: var(--theme-foreground-muted); padding: 0 4px;
+  flex-shrink: 0;
+}
+.audio-close-btn:hover { color: var(--theme-foreground); }
+.audio-body { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: start; }
+.audio-metric-list { display: flex; flex-direction: column; gap: 5px; }
+.audio-metric-btn {
+  text-align: left; padding: 7px 12px; border-radius: 8px;
+  border: 1.5px solid var(--theme-foreground-faint, #ddd);
+  background: var(--theme-background-alt);
+  color: var(--theme-foreground-muted);
+  font-size: 0.8rem; font-weight: 600; font-family: var(--sans-serif);
+  cursor: pointer; transition: all .12s; line-height: 1.3;
+}
+.audio-metric-btn:hover:not(.active) { border-color: #1DB95488; color: var(--theme-foreground); }
+.audio-metric-btn.active { background: #1DB954; border-color: #1DB954; color: #fff; }
+.chart-zoomable { cursor: zoom-in; }
 </style>
 
 ```js
@@ -65,7 +103,9 @@ import { langMeta, getLang, getLangColor, langLabel } from "./utils/langMeta.js"
 
 ```js
 // ── Chargement des données ──────────────────────────────────────────────
-const genreLangYear = await FileAttachment("data/genre_language_year.json").json();
+const genreLangYear      = await FileAttachment("data/genre_language_year.json").json();
+const audioFeatGenreYear = await FileAttachment("data/audio_features_genre_year.json").json();
+const audioFeatLangYear  = await FileAttachment("data/audio_features_lang_year.json").json();
 ```
 
 ```js
@@ -263,6 +303,180 @@ const filteredData = genreLangYear.filter(d =>
 ```
 
 ```js
+// ── Fonction popup "analyse approfondie" ────────────────────────────────
+function openAudioPopup({ decoupage, selectedGenres, selectedLangs, evoYearRange }) {
+  // Métriques disponibles selon le découpage
+  const METRICS_GENRE = [
+    { key: "tempo",            label: "Tempo (BPM)",   fmt: v => v.toFixed(1) },
+    { key: "avg_duration_min", label: "Durée (min)",   fmt: v => v.toFixed(2) },
+  ];
+  const METRICS_LANG = [
+    { key: "danceability", label: "Dansabilité",   fmt: v => v.toFixed(3) },
+    { key: "energy",       label: "Énergie",        fmt: v => v.toFixed(3) },
+    { key: "valence",      label: "Valence",        fmt: v => v.toFixed(3) },
+    { key: "tempo",        label: "Tempo (BPM)",   fmt: v => v.toFixed(1)  },
+    { key: "acousticness", label: "Acoustique",    fmt: v => v.toFixed(3) },
+    { key: "loudness",     label: "Volume (dB)",   fmt: v => v.toFixed(1)  },
+  ];
+  const metrics = decoupage === "langue" ? METRICS_LANG : METRICS_GENRE;
+  let activeMetric = metrics[0];
+
+  // ── Overlay + modal ────────────────────────────────────────────────────
+  const overlay = document.createElement("div");
+  overlay.className = "audio-overlay";
+
+  const modal = document.createElement("div");
+  modal.className = "audio-modal";
+  modal.addEventListener("click", e => e.stopPropagation());
+
+  // Header
+  const header = document.createElement("div");
+  header.className = "audio-modal-header";
+  const titleWrap = document.createElement("div");
+  const title = document.createElement("div");
+  title.className = "audio-modal-title";
+  title.textContent = "Caractéristiques audio";
+  // Résumé complet des filtres actifs – toujours affiché
+  const filterRows = [
+    ["Période",    `${evoYearRange[0]} – ${evoYearRange[1]}`],
+    ["Découpage",  decoupage === "genre" ? "Par genre" : decoupage === "langue" ? "Par langue" : "Aucun"],
+    ["Genres",     selectedGenres.join(", ")],
+    ["Langues",    selectedLangs.map(getLang).join(", ")],
+  ];
+  const filterSummary = document.createElement("div");
+  filterSummary.style.cssText = "margin-top:8px;display:flex;flex-direction:column;gap:2px;";
+  filterRows.forEach(([k, v]) => {
+    const row = document.createElement("div");
+    row.className = "audio-modal-sub";
+    row.style.cssText = "display:flex;gap:6px;";
+    const keyEl = document.createElement("span");
+    keyEl.style.cssText = "font-weight:700;min-width:70px;flex-shrink:0;";
+    keyEl.textContent = k + " :";
+    const valEl = document.createElement("span");
+    valEl.style.cssText = "color:var(--theme-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:520px;";
+    valEl.title = v;
+    valEl.textContent = v;
+    row.append(keyEl, valEl);
+    filterSummary.appendChild(row);
+  });
+  titleWrap.append(title, filterSummary);
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "audio-close-btn";
+  closeBtn.textContent = "×";
+  closeBtn.onclick = () => overlay.remove();
+  header.append(titleWrap, closeBtn);
+  modal.appendChild(header);
+
+  // Body = metric list + chart area
+  const body = document.createElement("div");
+  body.className = "audio-body";
+
+  const metricList = document.createElement("div");
+  metricList.className = "audio-metric-list";
+
+  const chartArea = document.createElement("div");
+
+  // ── Construction du graphe ligne ───────────────────────────────────────
+  function buildChart() {
+    chartArea.innerHTML = "";
+    const W = Math.min(window.innerWidth * 0.55, 570);
+    const { key, label, fmt } = activeMetric;
+
+    let data, colorDomain, colorRange, strokeField, tickFmt;
+
+    if (decoupage === "genre") {
+      data = audioFeatGenreYear
+        .filter(d => selectedGenres.includes(d.genre)
+          && +d.release_year >= evoYearRange[0]
+          && +d.release_year <= evoYearRange[1])
+        .map(d => ({ key: d.genre, release_year: +d.release_year, value: +d[key] }));
+      const order = genreGlobalOrder.filter(g => selectedGenres.includes(g));
+      const ext = d3.quantize(d3.interpolateRainbow, Math.max(order.length, 2));
+      colorDomain = order;
+      colorRange  = order.map((g, i) => i < palette12.length ? palette12[i] : ext[i]);
+      strokeField = "key";
+      tickFmt = d => d;
+    } else if (decoupage === "langue") {
+      data = audioFeatLangYear
+        .filter(d => selectedLangs.includes(d.language_code)
+          && +d.release_year >= evoYearRange[0]
+          && +d.release_year <= evoYearRange[1])
+        .map(d => ({ key: d.language_code, release_year: +d.release_year, value: +d[key] }));
+      colorDomain = topLangs.filter(l => selectedLangs.includes(l));
+      colorRange  = colorDomain.map(l => getLangColor(l));
+      strokeField = "key";
+      tickFmt = c => getLang(c);
+    } else {
+      // Aucun découpage : agrégé (moyenne pondérée sur genres sélectionnés)
+      data = [...d3.rollup(
+        audioFeatGenreYear.filter(d => selectedGenres.includes(d.genre)
+          && +d.release_year >= evoYearRange[0]
+          && +d.release_year <= evoYearRange[1]),
+        v => d3.mean(v, d => +d[key]),
+        d => +d.release_year
+      )].map(([year, val]) => ({ release_year: year, value: val }))
+        .filter(d => isFinite(d.value));  // éliminer les NaN/null qui cassent la ligne
+      colorDomain = null;
+      strokeField = null;
+    }
+
+    // Pour le cas "aucun", trier + Plot.line (pas lineY) pour éviter tout groupement implicite
+    const marks = [];
+    if (strokeField) {
+      marks.push(Plot.lineY(data, {
+        x: "release_year", y: "value", stroke: strokeField,
+        curve: "monotone-x", tip: true,
+        title: d => `${tickFmt(d.key)} · ${d.release_year}\n${fmt(+d.value)} ${label}`
+      }));
+    } else {
+      const sorted = data.slice().sort((a, b) => a.release_year - b.release_year);
+      marks.push(Plot.line(sorted, {
+        x: "release_year", y: "value",
+        stroke: "#1DB954", strokeWidth: 2, curve: "monotone-x"
+      }));
+      marks.push(Plot.dot(sorted, {
+        x: "release_year", y: "value",
+        fill: "#1DB954", r: 2, tip: true,
+        title: d => `${d.release_year}\n${fmt(+d.value)} ${label}`
+      }));
+    }
+    marks.push(Plot.ruleY([0]));
+
+    const plot = Plot.plot({
+      width: W, height: 280, marginLeft: 55, marginBottom: 36,
+      y: { label, grid: true },
+      ...(colorDomain ? { color: { domain: colorDomain, range: colorRange, legend: true, columns: 3, tickFormat: tickFmt } } : {}),
+      marks
+    });
+    chartArea.appendChild(plot);
+  }
+
+  // ── Boutons métriques ──────────────────────────────────────────────────
+  metrics.forEach(m => {
+    const btn = document.createElement("button");
+    btn.className = "audio-metric-btn" + (m === activeMetric ? " active" : "");
+    btn.textContent = m.label;
+    btn.onclick = () => {
+      activeMetric = m;
+      metricList.querySelectorAll(".audio-metric-btn").forEach(b => b.classList.toggle("active", b === btn));
+      buildChart();
+    };
+    metricList.appendChild(btn);
+  });
+
+  body.append(metricList, chartArea);
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  overlay.onclick = () => overlay.remove();
+  document.addEventListener("keydown", function esc(e) {
+    if (e.key === "Escape") { overlay.remove(); document.removeEventListener("keydown", esc); }
+  });
+  document.body.appendChild(overlay);
+  buildChart();
+}
+```
+
+```js
 // ── Rendu du graphe ─────────────────────────────────────────────────────
 {
   const genreColorScale = (keys) => {
@@ -349,7 +563,15 @@ const filteredData = genreLangYear.filter(d =>
     plotCfg.fy = { label: null, domain: facetKeys, padding: 0.12 };
   }
 
-  display(Plot.plot(plotCfg));
+  // Wrapper cliquable → popup analyse approfondie
+  const chartWrap = document.createElement("div");
+  chartWrap.className = "chart-zoomable";
+  chartWrap.title = "Cliquer pour analyser les caractéristiques audio";
+  chartWrap.appendChild(Plot.plot(plotCfg));
+  chartWrap.addEventListener("click", () => openAudioPopup({
+    decoupage, selectedGenres, selectedLangs, evoYearRange
+  }));
+  display(chartWrap);
 }
 ```
 
