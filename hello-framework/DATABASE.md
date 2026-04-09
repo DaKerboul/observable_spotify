@@ -4,6 +4,14 @@
 **Database:** `spotify`  
 **User:** `spotify`
 
+## 📖 Data Source Documentation
+
+Before diving into the schema, understand where this data comes from:
+
+- **[Data Journey Page](./src/data-journey.md)** — Visual guide to the pipeline (start here!)
+- **[DATA_JOURNEY.md](../../DATA_JOURNEY.md)** — Complete technical documentation
+- **[section_2_4_data_pipeline.md](../../section_2_4_data_pipeline.md)** — Pipeline specifications
+
 ---
 
 ## Tables
