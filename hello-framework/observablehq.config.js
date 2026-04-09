@@ -4,6 +4,7 @@ export default {
 
   pages: [
     { name: "Vue d'ensemble", path: "/" },
+    { name: "Traitement des Données", path: "/data-journey" },
     { name: "History of Music", path: "/history-of-music" },
     { name: "Tendances par Langue", path: "/language-trends" },
     { name: "Audio Features", path: "/audio-features" },

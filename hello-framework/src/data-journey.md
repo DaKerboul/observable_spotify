@@ -5,24 +5,33 @@ subtitle: From Raw Spotify Data to Analytics Tables
 
 # Data Journey: How Our Statistics Are Built
 
-This page explains the complete journey of Spotify music data—from raw metadata to the analytics you see on this site. We'll take you through every stage of the pipeline with real examples from our database.
+This page explains the complete journey of Spotify music data-from raw metadata to the analytics you see on this site. We'll take you through every stage of the pipeline with real examples from our database.
 
 ---
 
+## Raw Data Sources: Three Spotify Databases
+
+This analysis uses three Spotify datasets archived by [Anna's Archive](https://web.archive.org/web/20251228191059/https://annas-archive.org/blog/backing-up-spotify.html), a community-driven open library that preserves music metadata and research datasets.
+
+
 ## The Big Picture: Our Data Pipeline
 
-```
-Raw Spotify Data
-    ↓
-Filter, Normalize & Enrich
-    ↓
-Denormalize Into Detailed Tables
-    ↓
-Pre-aggregate for Speed
-    ↓
-Load Into PostgreSQL
-    ↓
-Query & Display Here
+```mermaid
+graph TD
+    A["Raw Spotify Data<br/>(3 SQLite Databases from Anna's Archive)"] --> B["Filter & Normalize<br/>(Language, Popularity, Year)"]
+    B --> C["Enrich & Join<br/>(Connect tracks, artists, genres)"]
+    C --> D["Denormalize<br/>(Track Details Table)<br/>9.9M rows"]
+    D --> E["Pre-aggregate<br/>(Genre x Language x Year)<br/>70K rows"]
+    E --> F["PostgreSQL<br/>(Web-accessible copy)"]
+    F --> G["Query & Display<br/>(Charts on site)"]
+    
+    style A fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#ecf0f1
+    style B fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style C fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style D fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#ecf0f1
+    style E fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style F fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#ecf0f1
+    style G fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
 ```
 
 **Why Multiple Stages?**
@@ -34,27 +43,36 @@ Query & Display Here
 
 ---
 
-## Stage 1: Source Data — Three Raw Databases
+## Stage 1: Source Data - Three Raw Databases
 
 We start with three Spotify datasets (from Anna's Archive):
 
 ### Database 1: `spotify_clean.sqlite3`
 **The Foundation:** All track metadata
 
-```
-┌─ Tracks: ~58.6 million records
-│  ├─ ID: Spotify track identifier
-│  ├─ Name: Track title
-│  ├─ Popularity: 0–100 score
-│  └─ Duration: milliseconds
-│
-├─ Artists: ~15.4 million unique artists
-│  ├─ Name, followers, genres
-│  └─ Associated playcounts
-│
-└─ Albums: ~58.6 million albums
-   ├─ Title, release date, type
-   └─ Linked to tracks & artists
+```mermaid
+graph LR
+    DB["sqlite_clean.sqlite3"]
+    
+    T["Tracks<br/>(58.6M records)<br/>ID, Name, Popularity<br/>Duration, Explicit"]
+    AR["Artists<br/>(15.4M records)<br/>Name, Followers<br/>Popularity"]
+    AL["Albums<br/>(58.6M records)<br/>Title, Release Date<br/>Type"]
+    G["Genres<br/>(2.2M associations)<br/>Artist -> Genre"]
+    
+    DB --> T
+    DB --> AR
+    DB --> AL
+    DB --> G
+    
+    T -.contains.-> AR
+    AR -.has.-> G
+    T -.from.-> AL
+    
+    style DB fill:#2c3e50,stroke:#34495e,stroke-width:3px,color:#ecf0f1
+    style T fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style AR fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style AL fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style G fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
 ```
 
 **Example Track:**
@@ -91,10 +109,10 @@ Track ID    Tempo   Danceability  Energy  Valence  Acousticness
 ```
 
 **What These Mean:**
-- **Danceability** (0.0–1.0): How dance-friendly is the track?
-- **Energy** (0.0–1.0): Intensity & activity level
-- **Valence** (0.0–1.0): Musical positivity (major vs. minor keys)
-- **Acousticness** (0.0–1.0): Acoustic instruments vs. electronic
+- **Danceability** (0.0-1.0): How dance-friendly is the track?
+- **Energy** (0.0-1.0): Intensity & activity level
+- **Valence** (0.0-1.0): Musical positivity (major vs. minor keys)
+- **Acousticness** (0.0-1.0): Acoustic instruments vs. electronic
 - **Tempo (BPM):** Beats per minute
 - And 9 more: loudness, speechiness, instrumentalness, liveness, key, mode, time signature, etc.
 
@@ -102,51 +120,98 @@ Track ID    Tempo   Danceability  Energy  Valence  Acousticness
 
 ---
 
-## Stage 2: Filters — Narrowing Focus
+## Stage 2: Filters - Narrowing Focus
 
 We apply **three main filters** to keep data focused and clean:
 
-### ✅ Filter 1: Language
+```mermaid
+graph LR
+    START["Start<br/>58.6M tracks"] 
+    
+    FILTER1["Language Filter<br/>en, fr, es, de, ja, pl"]
+    AFTER1["18M tracks<br/>(31% remain)"]
+    
+    FILTER2["Popularity Filter<br/>popularity > 5"]
+    AFTER2["10M tracks<br/>(55% remain)"]
+    
+    FILTER3["Year Filter<br/>1970-2025"]
+    AFTER3["9.9M tracks<br/>(FINAL)"]
+    
+    START --> FILTER1
+    FILTER1 --> AFTER1
+    AFTER1 --> FILTER2
+    FILTER2 --> AFTER2
+    AFTER2 --> FILTER3
+    FILTER3 --> AFTER3
+    
+    style START fill:#c0392b,stroke:#a93226,stroke-width:2px,color:#ecf0f1
+    style FILTER1 fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#ecf0f1
+    style FILTER2 fill:#27ae60,stroke:#1e8449,stroke-width:2px,color:#ecf0f1
+    style FILTER3 fill:#f39c12,stroke:#d68910,stroke-width:2px,color:#ecf0f1
+    style AFTER1 fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#ecf0f1
+    style AFTER2 fill:#27ae60,stroke:#1e8449,stroke-width:2px,color:#ecf0f1
+    style AFTER3 fill:#8e44ad,stroke:#6c3483,stroke-width:3px,color:#ecf0f1
+```
+
+### Details of Each Filter:
+
+### Filter 1: Language
 **Rule:** Keep only tracks in: `en`, `fr`, `es`, `de`, `ja`, `pl`
 
-**Why?** Focus on major global languages. 🌍
+**Why?** Focus on major global languages.
 
 **Impact:** ~58.6M tracks → ~18M tracks (31% remain)
 
 ---
 
-### ✅ Filter 2: Popularity
-**Rule:** Keep only tracks where `popularity > 5` (scale 0–100)
+### Filter 2: Popularity
+**Rule:** Keep only tracks where `popularity > 5` (scale 0-100)
 
-**Why?** Remove obscure/test tracks, focus on real releases. 🎵
+**Why?** Remove obscure/test tracks, focus on real releases.
 
 **Impact:** ~18M tracks → ~10M tracks (55% remain)
 
 ---
 
-### ✅ Filter 3: Release Year
+### Filter 3: Release Year
 **Rule:** Keep years in the range [1970, 2025]
 
-**Why?** Focus on recorded music era. Historical music from before 1970 is sparse anyway. 📅
+**Why?** Focus on recorded music era. Historical music from before 1970 is sparse anyway.
 
 **Extracted From:** Album release dates (standardized format)
 
 ---
 
-## Stage 3: Data Enrichment — Joining Across Databases
+## Stage 3: Data Enrichment - Joining Across Databases
 
 Now we connect everything:
 
-```
-Tracks
-    ↓ JOIN
-Artists ← Genres
-    ↓ JOIN
-Albums ← Release Dates
-    ↓ JOIN
-Track Files ← Languages
-    ↓ LEFT JOIN
-Audio Features ← Tempo, Danceability, etc.
+```mermaid
+graph LR
+    A["Tracks"]
+    B["Artists"]
+    C["Genres"]
+    D["Languages"]
+    E["Audio Features"]
+    
+    R["Enriched View<br/>Complete record<br/>per unique track"]
+    
+    A -->|JOIN| B
+    B -->|JOIN| C
+    A -->|JOIN| D
+    A -->|LEFT JOIN| E
+    
+    B --> R
+    C --> R
+    D --> R
+    E --> R
+    
+    style A fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#ecf0f1
+    style B fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#ecf0f1
+    style C fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style D fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style E fill:#34495e,stroke:#7f8c8d,stroke-width:2px,color:#ecf0f1
+    style R fill:#27ae60,stroke:#1e8449,stroke-width:3px,color:#ecf0f1
 ```
 
 **Result:** A unified view of each track with all its properties combined.
@@ -169,7 +234,7 @@ Audio Features ← Tempo, Danceability, etc.
 
 ---
 
-## Stage 4: Processing Step 1 — Top 2000 Genres
+## Stage 4: Processing Step 1 - Top 2000 Genres
 
 **The Problem:** Spotify has 100,000+ genre labels. This creates sparsity.
 
@@ -193,7 +258,7 @@ Audio Features ← Tempo, Danceability, etc.
 
 ---
 
-## Stage 5: Processing Step 2 — Denormalized Track Details
+## Stage 5: Processing Step 2 - Denormalized Track Details
 
 We create the **`track_details`** table: One row per track, containing everything.
 
@@ -219,9 +284,29 @@ We create the **`track_details`** table: One row per track, containing everythin
 
 ---
 
-## Stage 6: Processing Step 3 — Pre-aggregated Tables
+## Stage 6: Processing Step 3 - Pre-aggregated Tables
 
 For **performance**, we pre-compute three aggregations:
+
+```mermaid
+graph TB
+    D["track_details<br/>9,879,454 rows<br/>2.4 GB<br/>Denormalized"]
+    
+    A1["agg_genre_language_year<br/>70,615 rows<br/>8 MB<br/>Genre × Language × Year"]
+    
+    A2["agg_genre_year<br/>28,861 rows<br/>3 MB<br/>Genre × Year"]
+    
+    A3["agg_language_year<br/>337 rows<br/>88 KB<br/>Language × Year"]
+    
+    D --> A1
+    D --> A2
+    D --> A3
+    
+    style D fill:#c0392b,stroke:#a93226,stroke-width:3px,color:#ecf0f1
+    style A1 fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#ecf0f1
+    style A2 fill:#27ae60,stroke:#1e8449,stroke-width:2px,color:#ecf0f1
+    style A3 fill:#f39c12,stroke:#d68910,stroke-width:2px,color:#ecf0f1
+```
 
 ### Table 3A: `agg_genre_language_year`
 
@@ -238,7 +323,7 @@ Electronic| French   | 2019 | 78          | 45.3           | 0.73
 
 **Size:** 70,615 rows (~8 MB)
 
-**Why Pre-aggregate?** A dashboard chart grouping 10 million tracks would take seconds to compute. Pre-aggregation makes it instant. ⚡
+**Why Pre-aggregate?** A dashboard chart grouping 10 million tracks would take seconds to compute. Pre-aggregation makes it instant.
 
 ---
 
@@ -265,7 +350,7 @@ Japanese  | 2020 | 234         | 52.8
 Polish    | 2020 | 89          | 51.3
 ```
 
-**Size:** 337 rows (~88 KB) — Small enough to load in full!
+**Size:** 337 rows (~88 KB) - Small enough to load in full!
 
 ---
 
@@ -291,18 +376,56 @@ ORDER BY release_year
 ```
 
 Results power charts like:
-- 📊 Stacked area charts (genre trends over time)
-- 🎨 Donut charts (current genre distribution)
-- 📈 Line charts (feature evolution)
-- 🌍 Language breakdowns
+- Stacked area charts (genre trends over time)
+- Donut charts (current genre distribution)
+- Line charts (feature evolution)
+- Language breakdowns
 
 ---
 
 ## Case Study: One Track Through the Pipeline
 
-Let's trace **"Blinding Lights" by The Weeknd**:
+Let's trace **"Blinding Lights" by The Weeknd** through each stage:
 
-### ✅ **Raw Database:**
+```mermaid
+graph TD
+    S1["Raw Database<br/>ID: 3n3Ppam7vgaVa1iaRUc9Lp<br/>Name: Blinding Lights<br/>Pop: 95, Duration: 200s<br/>Album: After Hours 2019<br/><br/>Pass?"]
+    
+    S2["Language Database<br/>Language: English<br/>Popularity: 86<br/><br/>Keep? Language in 6 langs"]
+    
+    S3["Popularity Filter<br/>Keep? 86 > 5"]
+    
+    S4["Year Extraction<br/>Album: After Hours 2019<br/>Release: 2019-11-29<br/>Year: 2019<br/>Keep? 1970-2025"]
+    
+    S5["Genre Assignment<br/>Artist → Genres<br/>The Weeknd → pop, dark wave<br/>synth-pop, electronic<br/>All in top 2000?"]
+    
+    S6["Audio Features<br/>Tempo: 103.33 BPM<br/>Danceability: 0.855<br/>Energy: 0.730<br/>Valence: 0.486"]
+    
+    S7["Final track_details Row<br/>track_id: 3n3Ppam7vgaVa1iaRUc9Lp<br/>track_name: Blinding Lights<br/>language_code: en<br/>release_year: 2019<br/>genres: pop | dark wave | synth-pop | electronic<br/>danceability: 0.855<br/>energy: 0.730<br/>valence: 0.486"]
+    
+    S8["agg_genre_language_year<br/>genre: pop<br/>language_code: en<br/>release_year: 2019<br/>track_count: +1 (among ~800)<br/>avg_popularity: includes 86<br/>avg_danceability: includes 0.855"]
+    
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> S8
+    
+    style S1 fill:#c0392b,stroke:#a93226,stroke-width:2px,color:#ecf0f1
+    style S2 fill:#27ae60,stroke:#1e8449,stroke-width:2px,color:#ecf0f1
+    style S3 fill:#27ae60,stroke:#1e8449,stroke-width:2px,color:#ecf0f1
+    style S4 fill:#f39c12,stroke:#d68910,stroke-width:2px,color:#ecf0f1
+    style S5 fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#ecf0f1
+    style S6 fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#ecf0f1
+    style S7 fill:#9b59b6,stroke:#6c3483,stroke-width:3px,color:#ecf0f1
+    style S8 fill:#2980b9,stroke:#1f618d,stroke-width:3px,color:#ecf0f1
+```
+
+### Details by Stage:
+
+### **Raw Database:**
 ```
 ID: 3n3Ppam7vgaVa1iaRUc9Lp
 Name: "Blinding Lights"
@@ -312,14 +435,14 @@ Album: "After Hours" (Release: 2019-11-29)
 Explicit: No
 ```
 
-### ✅ **Language Database:**
+### **Language Database:**
 ```
 Track: 3n3Ppam7vgaVa1iaRUc9Lp
 Language: English
 Popularity: 86
 ```
 
-### ✅ **Audio Features:**
+### **Audio Features:**
 ```
 Tempo: 103.33 BPM
 Danceability: 0.855 (↑ Very danceable!)
@@ -328,11 +451,11 @@ Valence: 0.486 (→ Neutral mood)
 Acousticness: 0.0255 (↓ Mostly electronic)
 ```
 
-### ✅ **After Genre Top 2000 Filter:**
+### **After Genre Top 2000 Filter:**
 Artist (The Weeknd) has genres: [pop, dark wave, synth-pop, electronic]
-- All in top 2,000? ✅ Yes
+- All in top 2,000? Yes
 
-### ✅ **Final `track_details` Row:**
+### **Final `track_details` Row:**
 ```
 track_id: 3n3Ppam7vgaVa1iaRUc9Lp
 track_name: Blinding Lights
@@ -350,7 +473,7 @@ tempo: 103.33
 ... (other audio features)
 ```
 
-### ✅ **In `agg_genre_language_year`:**
+### **In `agg_genre_language_year`:**
 ```
 genre: pop
 language_code: en
@@ -360,99 +483,25 @@ avg_popularity: ... (includes 86 in the average)
 avg_danceability: ... (includes 0.855)
 ```
 
-### ✅ **Query Result on Site:**
+### **Query Result on Site:**
 When you view "2019 → Pop → English" on the site, this track is one of the ~800 that contribute to those statistics.
-
----
-
-## Data by The Numbers
-
-### Coverage
-
-| **Aspect** | **Count** | **Notes** |
-|------------|-----------|----------|
-| Total Tracks | 9,879,454 | After filters |
-| Time Span | 1970–2025 | 56 years |
-| Languages | 6 | en, fr, es, de, ja, pl |
-| Genres | 2,000 | Pruned from 100,000+ |
-| Artists | ~2.2M | Unique creators |
-| Audio Features | 350K (3%) | Limited coverage |
-
-### By Language
-
-| Language | Tracks | % | First Year |
-|----------|--------|---|------------|
-| English | 6.2M | 62.7% | 1970 |
-| French | 1.5M | 15.2% | 1975 |
-| Spanish | 0.9M | 9.1% | 1980 |
-| German | 0.8M | 8.1% | 1970 |
-| Japanese | 0.4M | 4.0% | 1985 |
-| Polish | 0.1M | 1.0% | 1995 |
-
-### By Era
-
-| Period | Tracks | Trend |
-|--------|--------|-------|
-| 1970–1999 | 500K | Historical catalogs |
-| 2000–2009 | 1.2M | Digital era emergence |
-| 2010–2019 | 4.5M | Streaming boom 📈 |
-| 2020–2025 | 3.7M | Recent content |
 
 ---
 
 ## Data Quality & Limitations
 
-### ✅ **What's Reliable:**
+### **What's Reliable:**
 - Track names, artists, release years
 - Popularity scores
 - Language identification
 - Genre membership
 - Audio features (Spotify's official measurements)
 
-### ⚠️ **Limitations:**
+### **Limitations:**
 - **Audio Features:** Only 3% coverage (350K of 9.9M tracks)
 - **Language Ambiguity:** Bilingual tracks assigned to single language
 - **Genre Sparsity:** Niche genres (> 2000) are dropped
 - **Historical Gaps:** Pre-1980 data is thin (~1% of total)
 - **Inconsistent Metadata:** Old records may have incomplete info
 
-### 🔄 **Updates:**
-- **Frequency:** Manual (currently as-needed)
-- **Process:** Run build script to regenerate from source databases
-- **Future:** Plan to automate with periodic refreshes
-
 ---
-
-## Want Deeper Details?
-
-📄 **Technical Documentation:** See [DATA_JOURNEY.md](../DATA_JOURNEY.md) for:
-- Detailed SQL queries
-- Build script documentation
-- Validation procedures
-- Database schemas
-
-📋 **Original Specs:** See [section_2_4_data_pipeline.md](../section_2_4_data_pipeline.md) for scientific methodology
-
-🗂️ **Database Schema:** See [DATABASE.md](./DATABASE.md) for PostgreSQL table structure
-
----
-
-## Summary
-
-Your analytics are built on a **multi-stage pipeline** that:
-
-1. **Starts** with 58.6 million tracks across 3 databases
-2. **Filters** to 10 million relevant, language-tagged tracks
-3. **Enriches** them with audio features and genre assignment
-4. **Denormalizes** into 9.9 million detailed rows
-5. **Pre-aggregates** into compact summary tables (for speed)
-6. **Loads** into PostgreSQL for web access
-7. **Displays** as charts and statistics here
-
-The result: **Fast, accurate, transparent music analytics.** 🎵
-
----
-
-**Want to reproduce this analysis?** Check the GitHub repository for the build scripts.
-
-**Questions?** This documentation is designed to be understandable. Please open an issue if something is unclear!
