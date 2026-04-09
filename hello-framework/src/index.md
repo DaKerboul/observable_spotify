@@ -91,6 +91,93 @@ toc: false
 .audio-metric-btn:hover:not(.active) { border-color: #1DB95488; color: var(--theme-foreground); }
 .audio-metric-btn.active { background: #1DB954; border-color: #1DB954; color: #fff; }
 .chart-zoomable { cursor: zoom-in; }
+
+/* ── Storytelling / Visite guidée ─────────────────────────────────────── */
+.story-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 8888;
+  background: var(--theme-background);
+  border-top: 2.5px solid #1DB954;
+  box-shadow: 0 -6px 32px rgba(0,0,0,0.18);
+  transform: translateY(100%);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--sans-serif);
+}
+.story-bar.active { transform: translateY(0); }
+
+.story-bar-inner {
+  max-width: 880px; margin: 0 auto;
+  padding: 18px 28px 16px;
+}
+.story-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.story-step-label {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: #1DB954;
+}
+.story-close {
+  background: none; border: none; font-size: 1.3rem; cursor: pointer;
+  color: var(--theme-foreground-muted); padding: 0 4px; line-height: 1;
+}
+.story-close:hover { color: var(--theme-foreground); }
+
+.story-title {
+  font-size: 1.2rem; font-weight: 800; margin: 0 0 5px;
+  opacity: 0; transform: translateY(10px);
+  animation: storySlideIn 0.45s 0.08s ease forwards;
+}
+.story-text {
+  font-size: 0.88rem; line-height: 1.55; margin: 0;
+  color: var(--theme-foreground-muted);
+  opacity: 0; transform: translateY(10px);
+  animation: storySlideIn 0.45s 0.22s ease forwards;
+}
+.story-text .story-overlay-link {
+  color: #1DB954; cursor: pointer; text-decoration: underline;
+  font-weight: 600;
+}
+.story-text .story-overlay-link:hover { color: #17a34a; }
+
+@keyframes storySlideIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.story-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px;
+}
+.story-dots { display: flex; gap: 8px; align-items: center; }
+.story-dot {
+  width: 10px; height: 10px; border-radius: 50%; padding: 0;
+  border: 2px solid #1DB954; background: transparent;
+  cursor: pointer; transition: all 0.2s;
+}
+.story-dot.active { background: #1DB954; transform: scale(1.25); }
+.story-dot:hover:not(.active) { background: #1DB95444; }
+
+.story-nav-btn {
+  padding: 6px 18px; border-radius: 8px;
+  border: 1.5px solid #1DB954; background: transparent; color: #1DB954;
+  font-size: 0.8rem; font-weight: 700; font-family: var(--sans-serif);
+  cursor: pointer; transition: all 0.15s;
+}
+.story-nav-btn:hover { background: #1DB954; color: #fff; }
+.story-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.story-nav-btn:disabled:hover { background: transparent; color: #1DB954; }
+
+.story-start-wrap {
+  position: fixed; bottom: 24px; right: 24px; z-index: 8887;
+}
+.story-start-btn {
+  padding: 11px 24px; border-radius: 24px;
+  background: #1DB954; color: #fff; border: none;
+  font-size: 0.86rem; font-weight: 700; font-family: var(--sans-serif);
+  cursor: pointer; box-shadow: 0 4px 18px rgba(29,185,84,0.35);
+  transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+}
+.story-start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(29,185,84,0.5); }
+.story-start-btn.hidden { display: none; }
 </style>
 
 ```js
@@ -99,6 +186,7 @@ import { yearSlider }            from "./components/yearSlider.js";
 import { searchableMultiSelect } from "./components/searchableMultiSelect.js";
 import { langPieChart }          from "./components/langPieChart.js";
 import { langMeta, getLang, getLangColor, langLabel } from "./utils/langMeta.js";
+import { PRESETS }               from "./components/storyPresets.js";
 ```
 
 ```js
@@ -129,6 +217,10 @@ const genreGlobalOrder = [...d3.rollup(genreLangYear, v => d3.sum(v, d => +d.tra
 ```js
 // ── Sélection des langues (Mutable, piloté par le disque) ───────────────
 const selectedLangs = Mutable([...topLangs]);
+// Expose getters/setters for the storytelling engine (avoids reactive dependency)
+window.__getSelectedLangs = () => selectedLangs.value;
+window.__setSelectedLangs = (langs) => { selectedLangs.value = langs; };
+window.__getAllLangs = () => [...topLangs];
 const toggleLang = (lang) => {
   const cur = selectedLangs.value;
   if (cur.includes(lang)) {
@@ -151,6 +243,9 @@ const toggleLang = (lang) => {
 ```js
 // ── Filtre genre : création de l'élément (réf stable) ───────────────────
 const genreFilterEl = searchableMultiSelect(allGenres, {label: "Genres (max 12)", value: defaultGenres, max: 12});
+// Expose for the storytelling engine (avoids reactive dependency)
+window.__setGenres = (genres) => genreFilterEl.setValue(genres);
+window.__getAllGenres = () => [...allGenres];
 display(genreFilterEl);
 ```
 
@@ -199,6 +294,7 @@ const decoupage = (() => {
   const tabs = [["aucun", "Aucun"], ["genre", "Par genre"], ["langue", "Par langue"]];
   let current = "genre";
   const wrap = document.createElement("div");
+  wrap.id = "ctrl-decoupage";
   wrap.className = "tab-selector";
   const lbl = document.createElement("span");
   lbl.className = "tab-label";
@@ -238,6 +334,7 @@ const diviserPar = (() => {
 
   let current = "aucun";
   const wrap = document.createElement("div");
+  wrap.id = "ctrl-diviser";
   wrap.className = "tab-selector";
   const lbl = document.createElement("span");
   lbl.className = "tab-label";
@@ -249,6 +346,7 @@ const diviserPar = (() => {
     btn.className = "tab-btn" + (value === current ? " active" : "");
     btn.textContent = label;
     btn.type = "button";
+    btn.dataset.value = value;
     btn.onclick = () => {
       current = value;
       grp.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b === btn));
@@ -268,6 +366,7 @@ const diviserPar = (() => {
 const normaliser = (() => {
   let on = false;
   const wrap = document.createElement("div");
+  wrap.id = "ctrl-normaliser";
   wrap.className = "tab-selector";
   const lbl = document.createElement("span");
   lbl.className = "tab-label";
@@ -576,7 +675,194 @@ function openAudioPopup({ decoupage, selectedGenres, selectedLangs, evoYearRange
 ```
 
 ```js
-const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
+const yearSliderEl = yearSlider({min: 1970, max: 2025, label: "Période"});
+yearSliderEl.id = "ctrl-year-slider";
+const evoYearRange = view(yearSliderEl);
 ```
 
 *Encoding note (rough): data item = one genre-year pair (aggregated across selected languages). Mark used = stacked area, chosen to show continuous change over time while also showing part-to-whole composition at each year. Visual variables: x-position maps year, y-height/area maps track count, and color hue maps genre identity.*
+
+```js
+// ── Visite guidée : moteur + UI ─────────────────────────────────────────
+{
+  // Cleanup previous instance (Observable cell re-execution)
+  document.getElementById("story-bar")?.remove();
+  document.getElementById("story-start-wrap")?.remove();
+
+  let currentStep = -1;
+
+  // ── Apply a preset config to the controls via DOM ──────────────────────
+  function applyPreset(preset) {
+    const cfg = preset.config;
+
+    // Genres filter (null = tout sélectionner)
+    window.__setGenres?.(cfg.genres ?? window.__getAllGenres?.() ?? []);
+
+    // Langs filter (null = tout sélectionner)
+    window.__setSelectedLangs?.(cfg.langs ?? window.__getAllLangs?.() ?? []);
+
+    // Year range
+    const slider = document.getElementById("ctrl-year-slider");
+    if (slider && slider.setRange) slider.setRange(cfg.yearRange[0], cfg.yearRange[1]);
+
+    // Découpage
+    const decBtn = document.querySelector(`#ctrl-decoupage [data-value="${cfg.decoupage}"]`);
+    if (decBtn && !decBtn.classList.contains("active")) decBtn.click();
+
+    // Normaliser
+    const normWrap = document.getElementById("ctrl-normaliser");
+    if (normWrap) {
+      const isOn = normWrap.querySelector(".tab-btn.active") !== null;
+      if (isOn !== cfg.normaliser) normWrap.querySelector(".tab-btn").click();
+    }
+
+    // Diviser par (dépend du découpage, donc petit délai pour laisser le DOM se reconstruire)
+    const targetDiv = cfg.diviserPar || "aucun";
+    setTimeout(() => {
+      const divBtn = document.querySelector(`#ctrl-diviser [data-value="${targetDiv}"]`);
+      if (divBtn && !divBtn.classList.contains("active")) divBtn.click();
+    }, 80);
+  }
+
+  // ── Parse text with {overlay}...{/overlay} links ───────────────────────
+  function parseStoryText(raw, preset) {
+    const p = document.createElement("p");
+    p.className = "story-text";
+    const parts = raw.split(/\{overlay\}(.*?)\{\/overlay\}/);
+    parts.forEach((part, i) => {
+      if (i % 2 === 0) {
+        p.appendChild(document.createTextNode(part));
+      } else {
+        const link = document.createElement("span");
+        link.className = "story-overlay-link";
+        link.textContent = part;
+        link.onclick = () => openAudioPopup({
+          decoupage: preset.config.decoupage,
+          selectedGenres: genreFilterEl.value,
+          selectedLangs: window.__getSelectedLangs?.() || [],
+          evoYearRange: preset.config.yearRange
+        });
+        p.appendChild(link);
+      }
+    });
+    return p;
+  }
+
+  // ── Build the story bar ────────────────────────────────────────────────
+  const bar = document.createElement("div");
+  bar.className = "story-bar";
+  bar.id = "story-bar";
+
+  function renderStep(idx) {
+    currentStep = idx;
+    const preset = PRESETS[idx];
+
+    bar.innerHTML = "";
+    const inner = document.createElement("div");
+    inner.className = "story-bar-inner";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "story-header";
+    const stepLabel = document.createElement("span");
+    stepLabel.className = "story-step-label";
+    stepLabel.textContent = `Étape ${idx + 1} sur ${PRESETS.length}`;
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "story-close";
+    closeBtn.textContent = "✕";
+    closeBtn.title = "Quitter la visite";
+    closeBtn.onclick = () => closeStory();
+    header.append(stepLabel, closeBtn);
+
+    // Title (animated)
+    const title = document.createElement("h3");
+    title.className = "story-title";
+    title.textContent = preset.title;
+
+    // Text (animated, with possible overlay link)
+    const text = parseStoryText(preset.text, preset);
+
+    // Navigation
+    const nav = document.createElement("div");
+    nav.className = "story-nav";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "story-nav-btn";
+    prevBtn.textContent = "← Précédent";
+    prevBtn.disabled = idx === 0;
+    prevBtn.onclick = () => goToStep(idx - 1);
+
+    const dots = document.createElement("div");
+    dots.className = "story-dots";
+    PRESETS.forEach((_, i) => {
+      const dot = document.createElement("button");
+      dot.className = "story-dot" + (i === idx ? " active" : "");
+      dot.title = PRESETS[i].title;
+      dot.onclick = () => goToStep(i);
+      dots.appendChild(dot);
+    });
+
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "story-nav-btn";
+    nextBtn.textContent = idx === PRESETS.length - 1 ? "Terminer ✓" : "Suivant →";
+    nextBtn.onclick = () => {
+      if (idx === PRESETS.length - 1) closeStory();
+      else goToStep(idx + 1);
+    };
+
+    nav.append(prevBtn, dots, nextBtn);
+    inner.append(header, title, text, nav);
+    bar.appendChild(inner);
+
+    bar.classList.add("active");
+    startBtn.classList.add("hidden");
+
+    // Apply the config
+    applyPreset(preset);
+
+    // Scroll chart into view
+    document.querySelector(".chart-zoomable")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function goToStep(idx) {
+    if (idx < 0 || idx >= PRESETS.length) return;
+    renderStep(idx);
+  }
+
+  function closeStory() {
+    bar.classList.remove("active");
+    startBtn.classList.remove("hidden");
+    currentStep = -1;
+  }
+
+  // ── Start button (floating) ────────────────────────────────────────────
+  const startWrap = document.createElement("div");
+  startWrap.className = "story-start-wrap";
+  startWrap.id = "story-start-wrap";
+  const startBtn = document.createElement("button");
+  startBtn.className = "story-start-btn";
+  startBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Visite guidée`;
+  startBtn.onclick = () => goToStep(0);
+  startWrap.appendChild(startBtn);
+
+  document.body.appendChild(bar);
+  document.body.appendChild(startWrap);
+
+  // ── Keyboard navigation ────────────────────────────────────────────────
+  const keyHandler = (e) => {
+    if (currentStep < 0) return;
+    if (document.querySelector(".audio-overlay")) return; // don't interfere with modal
+    if (e.key === "ArrowRight") { e.preventDefault(); goToStep(currentStep + 1); }
+    if (e.key === "ArrowLeft")  { e.preventDefault(); goToStep(currentStep - 1); }
+    if (e.key === "Escape")     closeStory();
+  };
+  document.addEventListener("keydown", keyHandler);
+
+  // Cleanup on cell disposal
+  invalidation.then(() => {
+    bar.remove();
+    startWrap.remove();
+    document.removeEventListener("keydown", keyHandler);
+  });
+}
+```

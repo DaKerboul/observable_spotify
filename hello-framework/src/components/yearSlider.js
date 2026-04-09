@@ -66,6 +66,14 @@ export function yearSlider({ min = 1970, max = 2025, label = "Période" } = {}) 
 
   tw.append(track, fill, lo, hi);
   c.append(top, tw);
+
+  // Programmatic setter for presets / storytelling
+  c.setRange = (newLo, newHi) => {
+    lo.value = newLo;
+    hi.value = newHi;
+    update();
+  };
+
   update();
   return c;
 }
