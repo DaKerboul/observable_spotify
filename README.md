@@ -10,7 +10,7 @@ I switched directly to this github project. (https://github.com/arussac-perso/ob
 
 Visualization dashboard built with [Observable Framework](https://observablehq.com/framework/) exploring a Spotify dataset (genres, languages, release years).
 
-**Live demo:** https://arussac-perso.github.io/observable_spotify/history-of-music
+**Live demo:** https://arussac-perso.github.io/observable_spotify/
 
 ## Pages
 - **Spotify Analytics** - bar charts and stacked area by genre/language with dual-range year filter.

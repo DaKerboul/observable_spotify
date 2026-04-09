@@ -36,300 +36,191 @@ toc: false
   line-height: 1.35;
   color: var(--theme-foreground-muted);
 }
-.nav-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  justify-content: center;
-  margin: 1.5rem 0 2rem;
-}
-.nav-card {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 18px 24px;
-  border-radius: 12px;
-  text-decoration: none;
-  background: var(--theme-background-alt);
-  border: 2px solid transparent;
-  transition: border-color .15s, box-shadow .15s;
-  font-family: var(--sans-serif);
-  min-width: 180px;
-  max-width: 240px;
-}
-.nav-card:hover { border-color: #1DB954; box-shadow: 0 4px 18px #1DB95422; }
-.nav-card-icon  { font-size: 1.8rem; }
-.nav-card-title { font-weight: 700; font-size: 1rem; color: var(--theme-foreground); }
-.nav-card-desc  { font-size: 0.78rem; color: var(--theme-foreground-muted); }
 
-.kpi-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 2rem;
-}
-.kpi-card {
-  flex: 1;
-  min-width: 140px;
+/* ── Tab selector (shared for metric + découpage) ──────────────────────── */
+.tab-selector { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--theme-foreground-muted); white-space: nowrap; }
+.tab-group { display: flex; gap: 4px; flex-wrap: wrap; }
+.tab-btn {
+  padding: 5px 15px; border-radius: 8px;
+  border: 1.5px solid var(--theme-foreground-faint, #ddd);
   background: var(--theme-background-alt);
-  border-radius: 10px;
-  padding: 14px 20px;
+  color: var(--theme-foreground-muted);
+  font-size: 0.8rem; font-weight: 600; font-family: var(--sans-serif);
+  cursor: pointer; transition: all .12s; line-height: 1.4;
+}
+.tab-btn:hover:not(.active) { border-color: #1DB95488; color: var(--theme-foreground); }
+.tab-btn.active { background: #1DB954; border-color: #1DB954; color: #fff; }
+.tab-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.tab-btn:disabled:hover { border-color: var(--theme-foreground-faint, #ddd); color: var(--theme-foreground-muted); }
+
+/* ── Popup analyse approfondie ─────────────────────────────────────────── */
+.audio-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.52);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .15s ease;
+}
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+.audio-modal {
+  background: var(--theme-background);
+  border-radius: 16px; padding: 28px 28px 20px;
+  width: min(92vw, 820px); max-height: 88vh; overflow: auto;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+  position: relative;
+}
+.audio-modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.audio-modal-title { font-weight: 800; font-size: 1.08rem; margin: 0; font-family: var(--sans-serif); }
+.audio-modal-sub { font-size: 0.78rem; color: var(--theme-foreground-muted); margin-top: 3px; font-family: var(--sans-serif); }
+.audio-close-btn {
+  background: none; border: none; font-size: 1.5rem; line-height: 1;
+  cursor: pointer; color: var(--theme-foreground-muted); padding: 0 4px;
+  flex-shrink: 0;
+}
+.audio-close-btn:hover { color: var(--theme-foreground); }
+.audio-body { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: start; }
+.audio-metric-list { display: flex; flex-direction: column; gap: 5px; }
+.audio-metric-btn {
+  text-align: left; padding: 7px 12px; border-radius: 8px;
+  border: 1.5px solid var(--theme-foreground-faint, #ddd);
+  background: var(--theme-background-alt);
+  color: var(--theme-foreground-muted);
+  font-size: 0.8rem; font-weight: 600; font-family: var(--sans-serif);
+  cursor: pointer; transition: all .12s; line-height: 1.3;
+}
+.audio-metric-btn:hover:not(.active) { border-color: #1DB95488; color: var(--theme-foreground); }
+.audio-metric-btn.active { background: #1DB954; border-color: #1DB954; color: #fff; }
+.chart-zoomable { cursor: zoom-in; }
+
+/* ── Storytelling / Visite guidée ─────────────────────────────────────── */
+.story-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 8888;
+  background: var(--theme-background);
+  border-top: 2.5px solid #1DB954;
+  box-shadow: 0 -6px 32px rgba(0,0,0,0.18);
+  transform: translateY(100%);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: var(--sans-serif);
 }
-.kpi-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
+.story-bar.active { transform: translateY(0); }
+
+.story-bar-inner {
+  max-width: 880px; margin: 0 auto;
+  padding: 18px 28px 16px;
+}
+.story-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.story-step-label {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: #1DB954;
+}
+.story-close {
+  background: none; border: none; font-size: 1.3rem; cursor: pointer;
+  color: var(--theme-foreground-muted); padding: 0 4px; line-height: 1;
+}
+.story-close:hover { color: var(--theme-foreground); }
+
+.story-title {
+  font-size: 1.2rem; font-weight: 800; margin: 0 0 5px;
+  opacity: 0; transform: translateY(10px);
+  animation: storySlideIn 0.45s 0.08s ease forwards;
+}
+.story-text {
+  font-size: 0.88rem; line-height: 1.55; margin: 0;
   color: var(--theme-foreground-muted);
-  margin-bottom: 4px;
+  opacity: 0; transform: translateY(10px);
+  animation: storySlideIn 0.45s 0.22s ease forwards;
 }
-.kpi-val {
-  font-size: 1.7rem;
-  font-weight: 900;
-  color: #1DB954;
-  line-height: 1;
+.story-text .story-overlay-link {
+  color: #1DB954; cursor: pointer; text-decoration: underline;
+  font-weight: 600;
 }
-.kpi-sub {
-  font-size: 0.72rem;
-  color: var(--theme-foreground-muted);
-  margin-top: 2px;
+.story-text .story-overlay-link:hover { color: #17a34a; }
+
+@keyframes storySlideIn {
+  to { opacity: 1; transform: translateY(0); }
 }
-.drs-wrap { position:relative; height:36px; width:100%; min-width:220px; }
-.drs-track { position:absolute; left:0; right:0; top:17px; height:2px; background:#ccc; border-radius:2px; }
-.drs-fill  { position:absolute; top:17px; height:2px; background:#1DB954; }
-.drs-wrap input[type=range] {
-  -webkit-appearance:none; appearance:none;
-  position:absolute; left:0; width:100%; top:0;
-  background:transparent; pointer-events:none; margin:0; height:36px;
+
+.story-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px;
 }
-.drs-wrap input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
-  background:#1DB954; cursor:pointer; pointer-events:all;
-  border:none; box-shadow:0 1px 4px #0003; margin-top:-7px;
+.story-dots { display: flex; gap: 8px; align-items: center; }
+.story-dot {
+  width: 10px; height: 10px; border-radius: 50%; padding: 0;
+  border: 2px solid #1DB954; background: transparent;
+  cursor: pointer; transition: all 0.2s;
 }
-.drs-wrap input[type=range]::-moz-range-thumb {
-  width:16px; height:16px; border-radius:50%;
-  background:#1DB954; cursor:pointer; pointer-events:all; border:none;
+.story-dot.active { background: #1DB954; transform: scale(1.25); }
+.story-dot:hover:not(.active) { background: #1DB95444; }
+
+.story-nav-btn {
+  padding: 6px 18px; border-radius: 8px;
+  border: 1.5px solid #1DB954; background: transparent; color: #1DB954;
+  font-size: 0.8rem; font-weight: 700; font-family: var(--sans-serif);
+  cursor: pointer; transition: all 0.15s;
 }
-.evo-controls {
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(280px, 320px);
-  gap: 18px;
-  align-items: start;
-  margin: 1rem 0 1.75rem;
+.story-nav-btn:hover { background: #1DB954; color: #fff; }
+.story-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.story-nav-btn:disabled:hover { background: transparent; color: #1DB954; }
+
+.story-start-wrap {
+  position: fixed; bottom: 24px; right: 24px; z-index: 8887;
 }
-.evo-controls-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.story-start-btn {
+  padding: 11px 24px; border-radius: 24px;
+  background: #1DB954; color: #fff; border: none;
+  font-size: 0.86rem; font-weight: 700; font-family: var(--sans-serif);
+  cursor: pointer; box-shadow: 0 4px 18px rgba(29,185,84,0.35);
+  transition: all 0.2s; display: flex; align-items: center; gap: 8px;
 }
-.evo-controls-disk {
-  display: flex;
-  justify-content: center;
-}
-.evo-disk-card {
-  width: 100%;
-  max-width: 320px;
-  padding: 14px;
-  border-radius: 12px;
-  background: var(--theme-background-alt);
-}
-.evo-disk-title {
-  margin-bottom: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--theme-foreground-muted);
-}
-@media (max-width: 900px) {
-  .evo-controls {
-    grid-template-columns: 1fr;
-  }
-}
+.story-start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(29,185,84,0.5); }
+.story-start-btn.hidden { display: none; }
 </style>
 
-<div class="nav-cards">
-  <a class="nav-card" href="./">
-    <span class="nav-card-icon">📊</span>
-    <span class="nav-card-title">Vue d'ensemble</span>
-    <span class="nav-card-desc">Genres dominants, évolution globale</span>
-  </a>
-  <a class="nav-card" href="./history-of-music">
-    <span class="nav-card-icon">🎵</span>
-    <span class="nav-card-title">History of Music</span>
-    <span class="nav-card-desc">Genres × langues × temps · stacked area</span>
-  </a>
-  <a class="nav-card" href="./language-trends">
-    <span class="nav-card-icon">🌍</span>
-    <span class="nav-card-title">Tendances par langue</span>
-    <span class="nav-card-desc">Volume, durée par langue</span>
-  </a>
-  <a class="nav-card" href="./audio-features">
-    <span class="nav-card-icon">🎛️</span>
-    <span class="nav-card-title">Audio Features</span>
-    <span class="nav-card-desc">DNA sonore des genres · énergie, danceability…</span>
-  </a>
-  <a class="nav-card" href="./plus">
-    <span class="nav-card-icon">+</span>
-    <span class="nav-card-title">Analyses complementaires</span>
-    <span class="nav-card-desc">Ouvrir la page plus pour explorer des vues supplementaires.</span>
-  </a>
-</div>
-
-
-
 ```js
-const genreYear = await FileAttachment("data/genre_year.json").json();
-const langYear  = await FileAttachment("data/language_year.json").json();
+// ── Imports ──────────────────────────────────────────────────────────────
+import { yearSlider }            from "./components/yearSlider.js";
+import { searchableMultiSelect } from "./components/searchableMultiSelect.js";
+import { langPieChart }          from "./components/langPieChart.js";
+import { langMeta, getLang, getLangColor, langLabel } from "./utils/langMeta.js";
+import { PRESETS }               from "./components/storyPresets.js";
 ```
 
 ```js
-const allGenres   = [...new Set(genreYear.map(d => d.genre))].sort();
-const allLangCodes = [...new Set(langYear.map(d => d.language_code))].sort();
-const langLabel = {en:"Anglais",fr:"Français",es:"Espagnol",de:"Allemand",pt:"Portugais",
-  it:"Italien",ja:"Japonais",ko:"Coréen",ar:"Arabe",ru:"Russe",tr:"Turc",nl:"Néerlandais",
-  pl:"Polonais",sv:"Suédois",hi:"Hindi"};
+// ── Chargement des données ──────────────────────────────────────────────
+const genreLangYear      = await FileAttachment("data/genre_language_year.json").json();
+const audioFeatGenreYear = await FileAttachment("data/audio_features_genre_year.json").json();
+const audioFeatLangYear  = await FileAttachment("data/audio_features_lang_year.json").json();
 ```
 
 ```js
-// Reusable searchable multi-select with checkboxes
-function searchableMultiSelect(items, {label = "", format = d => d, value = items} = {}) {
-  const selected = new Set(value);
-  const wrapper = document.createElement("fieldset");
-  wrapper.style.cssText = "border:1px solid var(--theme-foreground-faintest);border-radius:8px;padding:8px 12px;margin:0;";
+// ── Constantes dérivées ─────────────────────────────────────────────────
+const allGenres = [...new Set(genreLangYear.map(d => d.genre))].sort();
 
-  const leg = document.createElement("legend");
-  leg.textContent = label;
-  leg.style.cssText = "font-weight:700;font-size:0.85rem;padding:0 4px;";
-  wrapper.appendChild(leg);
+const defaultGenres = [...d3.rollup(genreLangYear, v => d3.sum(v, d => +d.track_count), d => d.genre)]
+  .sort((a, b) => b[1] - a[1]).slice(0, 12).map(d => d[0]);
 
-  const search = document.createElement("input");
-  search.type = "text";
-  search.placeholder = "Rechercher…";
-  search.style.cssText = "width:100%;padding:6px 8px;margin-bottom:6px;border:1px solid var(--theme-foreground-faintest);border-radius:6px;font-size:0.85rem;background:var(--theme-background);color:var(--theme-foreground);box-sizing:border-box;";
-  wrapper.appendChild(search);
+const topLangs = [...d3.rollup(genreLangYear, v => d3.sum(v, d => +d.track_count), d => d.language_code).entries()]
+  .sort((a, b) => b[1] - a[1]).slice(0, 10).map(d => d[0]);
 
-  const btnRow = document.createElement("div");
-  btnRow.style.cssText = "display:flex;gap:8px;margin-bottom:6px;";
-  const btnStyle = "font-size:0.75rem;padding:2px 8px;cursor:pointer;border:1px solid var(--theme-foreground-faintest);border-radius:4px;background:var(--theme-background-alt);color:var(--theme-foreground);";
-  const btnAll = Object.assign(document.createElement("button"), {textContent: "Tout sélectionner"});
-  btnAll.style.cssText = btnStyle;
-  const btnNone = Object.assign(document.createElement("button"), {textContent: "Tout désélectionner"});
-  btnNone.style.cssText = btnStyle;
-  btnRow.append(btnAll, btnNone);
-  wrapper.appendChild(btnRow);
+const palette12 = ["#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99","#e31a1c",
+                   "#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#b15928","#ffff99"];
 
-  const list = document.createElement("div");
-  list.style.cssText = "max-height:200px;overflow-y:auto;";
-
-  const checkboxes = items.map(item => {
-    const lbl = document.createElement("label");
-    lbl.style.cssText = "display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.82rem;cursor:pointer;";
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = selected.has(item);
-    lbl.appendChild(cb);
-    lbl.appendChild(document.createTextNode(format(item)));
-    lbl.dataset.text = format(item).toLowerCase();
-    list.appendChild(lbl);
-    return {label: lbl, checkbox: cb, item};
-  });
-  wrapper.appendChild(list);
-
-  function emit() {
-    selected.clear();
-    for (const {checkbox, item} of checkboxes) if (checkbox.checked) selected.add(item);
-    wrapper.value = [...selected];
-    wrapper.dispatchEvent(new Event("input", {bubbles: true}));
-  }
-
-  search.addEventListener("input", () => {
-    const q = search.value.toLowerCase();
-    for (const {label} of checkboxes) label.style.display = label.dataset.text.includes(q) ? "" : "none";
-  });
-  for (const {checkbox} of checkboxes) checkbox.addEventListener("change", emit);
-  btnAll.addEventListener("click", () => { const q = search.value.toLowerCase(); for (const {label, checkbox} of checkboxes) if (!q || label.dataset.text.includes(q)) checkbox.checked = true; emit(); });
-  btnNone.addEventListener("click", () => { const q = search.value.toLowerCase(); for (const {label, checkbox} of checkboxes) if (!q || label.dataset.text.includes(q)) checkbox.checked = false; emit(); });
-
-  wrapper.value = [...selected];
-  return wrapper;
-}
-
-// Reusable double-range year slider
-function yearSlider({min = 1970, max = 2025, label = "Période"} = {}) {
-  const c = document.createElement("div");
-  c.style.cssText = "display:flex;flex-direction:column;gap:4px;min-width:240px;font-family:var(--sans-serif);font-size:13px;";
-  const top = document.createElement("div");
-  top.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
-  const lbl = document.createElement("span");
-  lbl.style.cssText = "font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--theme-foreground-muted)";
-  lbl.textContent = label;
-  const out = document.createElement("span");
-  out.style.cssText = "font-weight:600;color:#1DB954;font-size:13px;";
-  out.textContent = `${min} – ${max}`;
-  top.append(lbl, out);
-  const tw = document.createElement("div"); tw.className = "drs-wrap";
-  const track = document.createElement("div"); track.className = "drs-track";
-  const fill = document.createElement("div"); fill.className = "drs-fill";
-  const lo = document.createElement("input"); lo.type = "range"; lo.min = min; lo.max = max; lo.value = min;
-  const hi = document.createElement("input"); hi.type = "range"; hi.min = min; hi.max = max; hi.value = max;
-  function upd() {
-    const l = Math.min(+lo.value, +hi.value), h = Math.max(+lo.value, +hi.value);
-    fill.style.left = (l - min) / (max - min) * 100 + "%";
-    fill.style.width = (h - l) / (max - min) * 100 + "%";
-    out.textContent = `${l} – ${h}`;
-    c.value = [l, h];
-    c.dispatchEvent(new Event("input", {bubbles: true}));
-  }
-  lo.addEventListener("input", () => { if (+lo.value > +hi.value) lo.value = hi.value; upd(); });
-  hi.addEventListener("input", () => { if (+hi.value < +lo.value) hi.value = lo.value; upd(); });
-  tw.append(track, fill, lo, hi);
-  c.append(top, tw);
-  upd();
-  return c;
-}
-```
-
-## Évolution des genres (1970 – 2025)
-
-```js
-const genreLangYear = await FileAttachment("data/genre_language_year.json").json();
-const audioFeatLangYear = await FileAttachment("data/audio_features_lang_year.json").json();
+// Ordre global stable des genres (calculé sur toutes les années, pas sur la fenêtre filtrée)
+const genreGlobalOrder = [...d3.rollup(genreLangYear, v => d3.sum(v, d => +d.track_count), d => d.genre)]
+  .sort((a, b) => b[1] - a[1]).map(d => d[0]);
 ```
 
 ```js
-const allGenresEvo   = [...new Set(genreLangYear.map(d => d.genre))].sort();
-const defaultGenresEvo = [...d3.rollup(genreLangYear, v => d3.sum(v, d => +d.track_count), d => d.genre)]
-  .sort((a,b) => b[1]-a[1]).slice(0, 12).map(d => d[0]);
-
-const topLangsEvo = [...d3.rollup(genreLangYear, v=>d3.sum(v,d=>+d.track_count), d=>d.language_code).entries()]
-  .sort((a,b)=>b[1]-a[1]).slice(0,10).map(d=>d[0]);
-
-const langMeta = {
-  en:{label:"Anglais",   color:"#1a75cc"},
-  es:{label:"Espagnol",  color:"#e84040"},
-  fr:{label:"Français",  color:"#9b59b6"},
-  de:{label:"Allemand",  color:"#f5a623"},
-  pt:{label:"Portugais", color:"#e91e8c"},
-  ja:{label:"Japonais",  color:"#16a085"},
-  it:{label:"Italien",   color:"#d35400"},
-  ko:{label:"Coréen",    color:"#2980b9"},
-  tr:{label:"Turc",      color:"#8e44ad"},
-  ru:{label:"Russe",     color:"#c0392b"},
-  pl:{label:"Polonais",  color:"#27ae60"},
-  nl:{label:"Néerlandais",color:"#1abc9c"},
-  ar:{label:"Arabe",     color:"#f39c12"},
-  sv:{label:"Suédois",   color:"#3498db"},
-  hi:{label:"Hindi",     color:"#e74c3c"},
-};
-const getLang = code => langMeta[code]?.label ?? code.toUpperCase();
-const getLangColor = code => langMeta[code]?.color ?? "#888";
-```
-
-```js
-const selectedLangs = Mutable([...topLangsEvo]);
+// ── Sélection des langues (Mutable, piloté par le disque) ───────────────
+const selectedLangs = Mutable([...topLangs]);
+// Expose getters/setters for the storytelling engine (avoids reactive dependency)
+window.__getSelectedLangs = () => selectedLangs.value;
+window.__setSelectedLangs = (langs) => { selectedLangs.value = langs; };
+window.__getAllLangs = () => [...topLangs];
 const toggleLang = (lang) => {
   const cur = selectedLangs.value;
   if (cur.includes(lang)) {
@@ -340,246 +231,638 @@ const toggleLang = (lang) => {
 };
 ```
 
+<!-- ════════════════════════════════════════════════════════════════════════
+     LAYOUT : filtres à gauche, contrôles + disque à droite
+     ════════════════════════════════════════════════════════════════════════ -->
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;margin-bottom:1.5rem;">
 <div>
 
-<p style="font-size:0.85rem;color:var(--theme-foreground-muted);margin:0 0 1rem;">Sélectionnez les genres à afficher. Cliquez sur les segments du disque pour filtrer par langue.</p>
-
-
-```js
-const evoGenreFilter = (() => {
-  const el = searchableMultiSelect(allGenresEvo, {label: "Genres", value: defaultGenresEvo});
-  el.style.display = evoMode === "genres" ? "" : "none";
-  display(el);
-  return Generators.input(el);
-})();
-```
-
-</div>
-<div>
+### Filtre
 
 ```js
-// Compute pie data from genreLangYear within the evo year range
-const langPieData = topLangsEvo.map(code => {
-  const total = genreLangYear
-    .filter(d => d.language_code === code && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
-    .reduce((s, d) => s + (+d.track_count), 0);
-  return {lang: code, label: getLang(code), count: total, color: getLangColor(code)};
-}).filter(d => d.count > 0);
-const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
+// ── Filtre genre : création de l'élément (réf stable) ───────────────────
+const genreFilterEl = searchableMultiSelect(allGenres, {label: "Genres (max 12)", value: defaultGenres, max: 12});
+// Expose for the storytelling engine (avoids reactive dependency)
+window.__setGenres = (genres) => genreFilterEl.setValue(genres);
+window.__getAllGenres = () => [...allGenres];
+display(genreFilterEl);
 ```
 
 ```js
-const evoLangDisk = (() => {
-  const PW=300, PH=310, cx=150, cy=145;
-  const R_sel=141, R_out=133, R_in=97, R_sep=94, R_grv=91, R_lbl=36, R_hole=15;
-  const NS="http://www.w3.org/2000/svg";
-  const svg=document.createElementNS(NS,"svg");
-  svg.setAttribute("viewBox",`0 0 ${PW} ${PH}`);
-  svg.setAttribute("width","100%"); svg.setAttribute("height",PH);
-  svg.style.overflow="visible";
-
-  const defs=document.createElementNS(NS,"defs");
-
-  const rg=document.createElementNS(NS,"radialGradient"); rg.id="idx-cdGrv";
-  rg.setAttribute("cx","40%"); rg.setAttribute("cy","35%"); rg.setAttribute("r","65%");
-  [["0%","#2e2e45"],["45%","#0f0f1c"],["100%","#070710"]].forEach(([o,c])=>{
-    const s=document.createElementNS(NS,"stop"); s.setAttribute("offset",o); s.setAttribute("stop-color",c); rg.appendChild(s);
-  });
-  defs.appendChild(rg);
-
-  [[0,"#ff004408","#ffaa0012","#00ff4408","#0044ff08"],
-   [72,"#0044ff08","#aa00ff10","#ff004408","#00ffaa08"],
-   [144,"#00ffaa08","#ffff0010","#ff00aa08","#44aaff08"]].forEach(([ang,...stops],i)=>{
-    const lg=document.createElementNS(NS,"linearGradient"); lg.id=`idx-ird${i}`;
-    lg.setAttribute("x1","0%"); lg.setAttribute("y1","0%"); lg.setAttribute("x2","100%"); lg.setAttribute("y2","100%");
-    lg.setAttribute("gradientTransform",`rotate(${ang},0.5,0.5)`);
-    stops.forEach((col,j)=>{
-      const s=document.createElementNS(NS,"stop"); s.setAttribute("offset",`${j/(stops.length-1)*100}%`); s.setAttribute("stop-color",col); lg.appendChild(s);
-    });
-    defs.appendChild(lg);
-  });
-
-  const cp=document.createElementNS(NS,"clipPath"); cp.id="idx-grpClip";
-  const cpc=document.createElementNS(NS,"circle"); cpc.setAttribute("cx",cx); cpc.setAttribute("cy",cy); cpc.setAttribute("r",R_grv); cp.appendChild(cpc); defs.appendChild(cp);
-  svg.appendChild(defs);
-
-  const body=document.createElementNS(NS,"circle"); body.setAttribute("cx",cx); body.setAttribute("cy",cy); body.setAttribute("r",R_sel+3); body.setAttribute("fill","#aeb3b8"); svg.appendChild(body);
-
-  function ap(a0,a1,Ro,Ri){
-    const x0=cx+Ro*Math.cos(a0),y0=cy+Ro*Math.sin(a0),x1=cx+Ro*Math.cos(a1),y1=cy+Ro*Math.sin(a1);
-    const x2=cx+Ri*Math.cos(a1),y2=cy+Ri*Math.sin(a1),x3=cx+Ri*Math.cos(a0),y3=cy+Ri*Math.sin(a0);
-    const f=(a1-a0)>Math.PI?1:0;
-    return `M${x0},${y0}A${Ro},${Ro} 0 ${f},1 ${x1},${y1}L${x2},${y2}A${Ri},${Ri} 0 ${f},0 ${x3},${y3}Z`;
-  }
-
-  // Enforce a minimum arc of 10px at the midpoint radius so tiny slices stay visible
-  const minAng = 10 / ((R_in + R_out) / 2);
-  const naturalAngles = langPieData.map(d => (d.count / pieTotal) * 2 * Math.PI);
-  const clampedAngles = naturalAngles.map(a => Math.max(a, minAng));
-  const clampedTotal = clampedAngles.reduce((s, a) => s + a, 0);
-  const finalAngles = clampedAngles.map(a => (a / clampedTotal) * 2 * Math.PI);
-
-  let cum=-Math.PI/2;
-  const arcData=langPieData.map((d,i)=>{
-    const a=finalAngles[i], a0=cum, a1=cum+a; cum=a1;
-    return {...d,a0,a1,mid:(a0+a1)/2,pct:(d.count/pieTotal*100).toFixed(1)};
-  });
-
-  arcData.forEach(a=>{
-    const on=selectedLangs.includes(a.lang);
-    const Ro=on?R_sel:R_out;
-    const g=document.createElementNS(NS,"g"); g.style.cursor="pointer";
-    const p=document.createElementNS(NS,"path");
-    p.setAttribute("d",ap(a.a0,a.a1,Ro,R_in));
-    p.setAttribute("fill",a.color); p.setAttribute("stroke","rgba(255,255,255,0.55)"); p.setAttribute("stroke-width","1.2");
-    p.style.opacity=on?"1":"0.2";
-    const tip=document.createElementNS(NS,"title"); tip.textContent=`${a.label}: ${a.pct}% · ${a.count.toLocaleString()} titres`; p.appendChild(tip); g.appendChild(p);
-    if(a.a1-a.a0>0.26){
-      const mr=(Ro+R_in)/2, tx=cx+mr*Math.cos(a.mid), ty=cy+mr*Math.sin(a.mid);
-      const t=document.createElementNS(NS,"text"); t.setAttribute("x",tx); t.setAttribute("y",ty);
-      t.setAttribute("text-anchor","middle"); t.setAttribute("dominant-baseline","middle");
-      t.setAttribute("fill","#fff"); t.setAttribute("font-size","8"); t.setAttribute("font-weight","800");
-      t.setAttribute("font-family","var(--sans-serif)"); t.style.pointerEvents="none"; t.textContent=a.lang.toUpperCase(); g.appendChild(t);
-    }
-    g.addEventListener("click",()=>toggleLang(a.lang));
-    svg.appendChild(g);
-  });
-
-  const sep=document.createElementNS(NS,"circle"); sep.setAttribute("cx",cx); sep.setAttribute("cy",cy); sep.setAttribute("r",R_sep); sep.setAttribute("fill","#c8cdd4"); svg.appendChild(sep);
-  const grv=document.createElementNS(NS,"circle"); grv.setAttribute("cx",cx); grv.setAttribute("cy",cy); grv.setAttribute("r",R_grv); grv.setAttribute("fill","url(#idx-cdGrv)"); svg.appendChild(grv);
-
-  [0,1,2].forEach(i=>{
-    const r=document.createElementNS(NS,"rect"); r.setAttribute("x",cx-R_grv); r.setAttribute("y",cy-R_grv); r.setAttribute("width",R_grv*2); r.setAttribute("height",R_grv*2);
-    r.setAttribute("fill",`url(#idx-ird${i})`); r.setAttribute("clip-path","url(#idx-grpClip)"); svg.appendChild(r);
-  });
-
-  for(let rr=R_lbl+5;rr<R_grv-1;rr+=3.2){
-    const ring=document.createElementNS(NS,"circle"); ring.setAttribute("cx",cx); ring.setAttribute("cy",cy); ring.setAttribute("r",rr);
-    ring.setAttribute("fill","none"); ring.setAttribute("stroke",`rgba(255,255,255,${0.022+((rr*7)%9)/700})`); ring.setAttribute("stroke-width","0.65"); svg.appendChild(ring);
-  }
-
-  const hi=document.createElementNS(NS,"path"); hi.setAttribute("d",ap(-1.9,-0.45,R_grv-5,R_lbl+7)); hi.setAttribute("fill","rgba(255,255,255,0.055)"); svg.appendChild(hi);
-
-  const hole=document.createElementNS(NS,"circle"); hole.setAttribute("cx",cx); hole.setAttribute("cy",cy); hole.setAttribute("r",R_hole); hole.setAttribute("fill","var(--theme-background)"); hole.setAttribute("stroke","#666"); hole.setAttribute("stroke-width","0.5"); svg.appendChild(hole);
-
-  const leg=document.createElement("div");
-  leg.style.cssText="margin-top:8px;font-family:var(--sans-serif);font-size:10px;display:grid;grid-template-columns:1fr 1fr;gap:2px 6px;";
-  arcData.forEach(d=>{
-    const on=selectedLangs.includes(d.lang);
-    const row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px;";
-    const dot=document.createElement("span"); dot.style.cssText=`width:7px;height:7px;border-radius:2px;background:${d.color};flex-shrink:0;opacity:${on?1:0.35};`;
-    const info=document.createElement("span"); info.style.cssText=`color:${on?"var(--theme-foreground)":"var(--theme-foreground-muted)"};`;
-    info.textContent=`${d.label} ${d.pct}%`;
-    row.append(dot,info);
-    row.addEventListener("click",()=>toggleLang(d.lang));
-    leg.appendChild(row);
-  });
-
-  const wrap=document.createElement("div");
-  wrap.append(svg,leg);
-  return wrap;
-})();
+// ── Filtre genre : écoute réactive ──────────────────────────────────────
+const selectedGenres = Generators.input(genreFilterEl);
 ```
 
-<div style="margin-bottom:14px;">${evoYearRange}</div>
-
-<div class="evo-controls">
-  <div class="evo-controls-panel">
-    <div>${evoGenreFilter}</div>
-  </div>
-  <div class="evo-controls-disk">
-    <div class="evo-disk-card">
-      <div class="evo-disk-title">Langues</div>
-      ${evoLangDisk}
-    </div>
-  </div>
-</div>
-
 ```js
-// === Mode GENRES ===
-const evoData_genres = evoMode !== "genres" ? [] : d3.rollups(
-  genreLangYear.filter(d => evoGenreFilter.includes(d.genre) && selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
-  v => d3.sum(v, d => +d.track_count),
-  d => d.genre,
-  d => +d.release_year
-).flatMap(([genre, years]) => years.map(([year, count]) => ({ genre, release_year: year, track_count: count })));
-
-// === Mode TEMPO ===
-const evoData_tempo = evoMode !== "tempo" ? [] : audioFeatLangYear
-  .filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1])
-  .map(d => ({ language: d.language_code, release_year: +d.release_year, value: +d.tempo }));
-
-// === Mode DURÉE ===
-const evoData_duree = evoMode !== "durée" ? [] : [...d3.rollup(
-  genreLangYear.filter(d => selectedLangs.includes(d.language_code) && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]),
-  v => d3.mean(v, d => +d.avg_duration_ms) / 60000,
-  d => d.language_code,
-  d => +d.release_year
-)].flatMap(([lang, years]) => [...years].map(([year, val]) => ({ language: lang, release_year: year, value: val })));
-
+// ── Effet : adapter le filtre genre selon le découpage ───────────────────
 {
-  if (evoMode === "genres") {
-    const evoGenreOrder = [...d3.rollup(evoData_genres, v => d3.sum(v, d => d.track_count), d => d.genre)]
-      .sort((a,b) => b[1]-a[1]).map(d => d[0]);
-    const palette12 = ["#1DB954","#1a75cc","#e84040","#f5a623","#9b59b6","#e91e8c",
-                       "#16a085","#d35400","#2980b9","#27ae60","#8e44ad","#c0392b"];
-    const extPalette = d3.quantize(d3.interpolateRainbow, Math.max(evoGenreOrder.length, 1));
-    const evoColors = evoGenreOrder.map((g,i) => i < palette12.length ? palette12[i] : extPalette[i]);
-    display(Plot.plot({
-      width,
-      height: 380,
-      marginLeft: 55,
-      marginBottom: 40,
-      y: { label: "Titres", grid: true, tickFormat: "s" },
-      color: { domain: evoGenreOrder, range: evoColors, legend: true, columns: 4 },
-      marks: [
-        Plot.areaY(evoData_genres, {
-          x: "release_year",
-          y: "track_count",
-          fill: "genre",
-          order: evoGenreOrder,
-          curve: "monotone-x",
-          tip: true,
-          title: d => `${d.genre} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`
-        }),
-        Plot.ruleY([0])
-      ]
-    }));
-  } else {
-    const langOrder = topLangsEvo.filter(l => selectedLangs.includes(l));
-    const langColors = langOrder.map(l => getLangColor(l));
-    const data = evoMode === "tempo" ? evoData_tempo : evoData_duree;
-    const yLabel = evoMode === "tempo" ? "BPM moyen" : "Durée (min)";
-    display(Plot.plot({
-      width,
-      height: 380,
-      marginLeft: 55,
-      marginBottom: 40,
-      y: { label: yLabel, grid: true },
-      color: { domain: langOrder, range: langColors },
-      marks: [
-        Plot.lineY(data, {
-          x: "release_year",
-          y: "value",
-          stroke: "language",
-          curve: "monotone-x",
-          tip: true,
-          title: d => `${getLang(d.language)} · ${d.release_year}\n${d.value.toFixed(evoMode === "tempo" ? 1 : 2)} ${evoMode === "tempo" ? "BPM" : "min"}`
-        }),
-        Plot.ruleY([0])
-      ]
-    }));
+  const byGenre = decoupage === "genre";
+  genreFilterEl.setBtnAllVisible(!byGenre);
+  genreFilterEl.setMax(byGenre ? 12 : Infinity);
+  if (byGenre && selectedGenres.length > 12) {
+    genreFilterEl.setValue(defaultGenres);
+    alert(`La sélection a été réinitialisée aux 12 genres par défaut.\nEn mode "Découpage par genre", la sélection est limitée à 12 genres.`);
   }
 }
 ```
 
+</div>
+<div>
+
 ```js
-const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
+// ── Filtre langue (disque vinyle, toujours visible) ─────────────────────
+const langPieData = topLangs.map(code => {
+  const total = genreLangYear
+    .filter(d => d.language_code === code
+      && +d.release_year >= evoYearRange[0] && +d.release_year <= evoYearRange[1]
+      && selectedGenres.includes(d.genre))
+    .reduce((s, d) => s + (+d.track_count), 0);
+  return { lang: code, label: getLang(code), count: total, color: getLangColor(code) };
+}).filter(d => d.count > 0);
+
+const pieTotal = langPieData.reduce((s, d) => s + d.count, 0);
+display(langPieChart(langPieData, pieTotal, selectedLangs, toggleLang));
+```
+
+</div>
+<div>
+
+```js
+// ── Découpage : comment séparer les areas / lignes du graphe ? ──────────
+const decoupage = (() => {
+  const tabs = [["aucun", "Aucun"], ["genre", "Par genre"], ["langue", "Par langue"]];
+  let current = "genre";
+  const wrap = document.createElement("div");
+  wrap.id = "ctrl-decoupage";
+  wrap.className = "tab-selector";
+  const lbl = document.createElement("span");
+  lbl.className = "tab-label";
+  lbl.textContent = "Découpage";
+  const grp = document.createElement("div");
+  grp.className = "tab-group";
+  const buttons = [];
+  tabs.forEach(([value, label]) => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (value === current ? " active" : "");
+    btn.textContent = label;
+    btn.type = "button";
+    btn.dataset.value = value;
+    btn.onclick = () => {
+      if (btn.disabled) return;
+      current = value;
+      grp.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b === btn));
+      wrap.dispatchEvent(new CustomEvent("input"));
+    };
+    grp.appendChild(btn);
+    buttons.push(btn);
+  });
+  wrap.append(lbl, grp);
+  Object.defineProperty(wrap, "value", { get: () => current });
+  display(wrap);
+  return Generators.input(wrap);
+})();
 ```
 
 ```js
-const evoYearRange = view(yearSlider({min: 1970, max: 2025, label: "Période"}));
+// ── Diviser par : small multiples (facettes) ────────────────────────────
+// On ne peut pas diviser par la même dimension que le découpage
+const diviserPar = (() => {
+  const opts = [["aucun", "—"]];
+  if (decoupage !== "genre")  opts.push(["genre", "Genre"]);
+  if (decoupage !== "langue") opts.push(["langue", "Langue"]);
+
+  let current = "aucun";
+  const wrap = document.createElement("div");
+  wrap.id = "ctrl-diviser";
+  wrap.className = "tab-selector";
+  const lbl = document.createElement("span");
+  lbl.className = "tab-label";
+  lbl.textContent = "Diviser par";
+  const grp = document.createElement("div");
+  grp.className = "tab-group";
+  opts.forEach(([value, label]) => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (value === current ? " active" : "");
+    btn.textContent = label;
+    btn.type = "button";
+    btn.dataset.value = value;
+    btn.onclick = () => {
+      current = value;
+      grp.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b === btn));
+      wrap.dispatchEvent(new CustomEvent("input"));
+    };
+    grp.appendChild(btn);
+  });
+  wrap.append(lbl, grp);
+  Object.defineProperty(wrap, "value", { get: () => current });
+  display(wrap);
+  return Generators.input(wrap);
+})();
+```
+
+```js
+// ── Normaliser (on/off) ─────────────────────────────────────────────────
+const normaliser = (() => {
+  let on = false;
+  const wrap = document.createElement("div");
+  wrap.id = "ctrl-normaliser";
+  wrap.className = "tab-selector";
+  const lbl = document.createElement("span");
+  lbl.className = "tab-label";
+  lbl.textContent = "Normaliser";
+  const btn = document.createElement("button");
+  btn.className = "tab-btn";
+  btn.textContent = "Off";
+  btn.type = "button";
+  btn.onclick = () => {
+    on = !on;
+    btn.classList.toggle("active", on);
+    btn.textContent = on ? "On" : "Off";
+    wrap.dispatchEvent(new CustomEvent("input"));
+  };
+  wrap.append(lbl, btn);
+  Object.defineProperty(wrap, "value", { get: () => on });
+  display(wrap);
+  return Generators.input(wrap);
+})();
+```
+
+</div>
+</div>
+
+```js
+// ── Préparation des données filtrées ────────────────────────────────────
+const filteredData = genreLangYear.filter(d =>
+  selectedGenres.includes(d.genre) &&
+  selectedLangs.includes(d.language_code) &&
+  +d.release_year >= evoYearRange[0] &&
+  +d.release_year <= evoYearRange[1]
+);
+```
+
+```js
+// ── Fonction popup "analyse approfondie" ────────────────────────────────
+function openAudioPopup({ decoupage, selectedGenres, selectedLangs, evoYearRange }) {
+  // Métriques disponibles selon le découpage
+  const METRICS_GENRE = [
+    { key: "tempo",            label: "Tempo (BPM)",   fmt: v => v.toFixed(1) },
+    { key: "avg_duration_min", label: "Durée (min)",   fmt: v => v.toFixed(2) },
+  ];
+  const METRICS_LANG = [
+    { key: "danceability", label: "Dansabilité",   fmt: v => v.toFixed(3) },
+    { key: "energy",       label: "Énergie",        fmt: v => v.toFixed(3) },
+    { key: "valence",      label: "Valence",        fmt: v => v.toFixed(3) },
+    { key: "tempo",        label: "Tempo (BPM)",   fmt: v => v.toFixed(1)  },
+    { key: "acousticness", label: "Acoustique",    fmt: v => v.toFixed(3) },
+    { key: "loudness",     label: "Volume (dB)",   fmt: v => v.toFixed(1)  },
+  ];
+  const metrics = decoupage === "langue" ? METRICS_LANG : METRICS_GENRE;
+  let activeMetric = metrics[0];
+
+  // ── Overlay + modal ────────────────────────────────────────────────────
+  const overlay = document.createElement("div");
+  overlay.className = "audio-overlay";
+
+  const modal = document.createElement("div");
+  modal.className = "audio-modal";
+  modal.addEventListener("click", e => e.stopPropagation());
+
+  // Header
+  const header = document.createElement("div");
+  header.className = "audio-modal-header";
+  const titleWrap = document.createElement("div");
+  const title = document.createElement("div");
+  title.className = "audio-modal-title";
+  title.textContent = "Caractéristiques audio";
+  // Résumé complet des filtres actifs – toujours affiché
+  const filterRows = [
+    ["Période",    `${evoYearRange[0]} – ${evoYearRange[1]}`],
+    ["Découpage",  decoupage === "genre" ? "Par genre" : decoupage === "langue" ? "Par langue" : "Aucun"],
+    ["Genres",     selectedGenres.join(", ")],
+    ["Langues",    selectedLangs.map(getLang).join(", ")],
+  ];
+  const filterSummary = document.createElement("div");
+  filterSummary.style.cssText = "margin-top:8px;display:flex;flex-direction:column;gap:2px;";
+  filterRows.forEach(([k, v]) => {
+    const row = document.createElement("div");
+    row.className = "audio-modal-sub";
+    row.style.cssText = "display:flex;gap:6px;";
+    const keyEl = document.createElement("span");
+    keyEl.style.cssText = "font-weight:700;min-width:70px;flex-shrink:0;";
+    keyEl.textContent = k + " :";
+    const valEl = document.createElement("span");
+    valEl.style.cssText = "color:var(--theme-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:520px;";
+    valEl.title = v;
+    valEl.textContent = v;
+    row.append(keyEl, valEl);
+    filterSummary.appendChild(row);
+  });
+  titleWrap.append(title, filterSummary);
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "audio-close-btn";
+  closeBtn.textContent = "×";
+  closeBtn.onclick = () => overlay.remove();
+  header.append(titleWrap, closeBtn);
+  modal.appendChild(header);
+
+  // Body = metric list + chart area
+  const body = document.createElement("div");
+  body.className = "audio-body";
+
+  const metricList = document.createElement("div");
+  metricList.className = "audio-metric-list";
+
+  const chartArea = document.createElement("div");
+
+  // ── Construction du graphe ligne ───────────────────────────────────────
+  function buildChart() {
+    chartArea.innerHTML = "";
+    const W = Math.min(window.innerWidth * 0.55, 570);
+    const { key, label, fmt } = activeMetric;
+
+    let data, colorDomain, colorRange, strokeField, tickFmt;
+
+    if (decoupage === "genre") {
+      data = audioFeatGenreYear
+        .filter(d => selectedGenres.includes(d.genre)
+          && +d.release_year >= evoYearRange[0]
+          && +d.release_year <= evoYearRange[1])
+        .map(d => ({ key: d.genre, release_year: +d.release_year, value: +d[key] }));
+      const order = genreGlobalOrder.filter(g => selectedGenres.includes(g));
+      const ext = d3.quantize(d3.interpolateRainbow, Math.max(order.length, 2));
+      colorDomain = order;
+      colorRange  = order.map((g, i) => i < palette12.length ? palette12[i] : ext[i]);
+      strokeField = "key";
+      tickFmt = d => d;
+    } else if (decoupage === "langue") {
+      data = audioFeatLangYear
+        .filter(d => selectedLangs.includes(d.language_code)
+          && +d.release_year >= evoYearRange[0]
+          && +d.release_year <= evoYearRange[1])
+        .map(d => ({ key: d.language_code, release_year: +d.release_year, value: +d[key] }));
+      colorDomain = topLangs.filter(l => selectedLangs.includes(l));
+      colorRange  = colorDomain.map(l => getLangColor(l));
+      strokeField = "key";
+      tickFmt = c => getLang(c);
+    } else {
+      // Aucun découpage : agrégé (moyenne pondérée sur genres sélectionnés)
+      data = [...d3.rollup(
+        audioFeatGenreYear.filter(d => selectedGenres.includes(d.genre)
+          && +d.release_year >= evoYearRange[0]
+          && +d.release_year <= evoYearRange[1]),
+        v => d3.mean(v, d => +d[key]),
+        d => +d.release_year
+      )].map(([year, val]) => ({ release_year: year, value: val }))
+        .filter(d => isFinite(d.value));  // éliminer les NaN/null qui cassent la ligne
+      colorDomain = null;
+      strokeField = null;
+    }
+
+    // Pour le cas "aucun", trier + Plot.line (pas lineY) pour éviter tout groupement implicite
+    const marks = [];
+    if (strokeField) {
+      marks.push(Plot.lineY(data, {
+        x: "release_year", y: "value", stroke: strokeField,
+        curve: "monotone-x", tip: true,
+        title: d => `${tickFmt(d.key)} · ${d.release_year}\n${fmt(+d.value)} ${label}`
+      }));
+    } else {
+      const sorted = data.slice().sort((a, b) => a.release_year - b.release_year);
+      marks.push(Plot.line(sorted, {
+        x: "release_year", y: "value",
+        stroke: "#1DB954", strokeWidth: 2, curve: "monotone-x"
+      }));
+      marks.push(Plot.dot(sorted, {
+        x: "release_year", y: "value",
+        fill: "#1DB954", r: 2, tip: true,
+        title: d => `${d.release_year}\n${fmt(+d.value)} ${label}`
+      }));
+    }
+    marks.push(Plot.ruleY([0]));
+
+    const plot = Plot.plot({
+      width: W, height: 280, marginLeft: 55, marginBottom: 36,
+      y: { label, grid: true },
+      ...(colorDomain ? { color: { domain: colorDomain, range: colorRange, legend: true, columns: 3, tickFormat: tickFmt } } : {}),
+      marks
+    });
+    chartArea.appendChild(plot);
+  }
+
+  // ── Boutons métriques ──────────────────────────────────────────────────
+  metrics.forEach(m => {
+    const btn = document.createElement("button");
+    btn.className = "audio-metric-btn" + (m === activeMetric ? " active" : "");
+    btn.textContent = m.label;
+    btn.onclick = () => {
+      activeMetric = m;
+      metricList.querySelectorAll(".audio-metric-btn").forEach(b => b.classList.toggle("active", b === btn));
+      buildChart();
+    };
+    metricList.appendChild(btn);
+  });
+
+  body.append(metricList, chartArea);
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  overlay.onclick = () => overlay.remove();
+  document.addEventListener("keydown", function esc(e) {
+    if (e.key === "Escape") { overlay.remove(); document.removeEventListener("keydown", esc); }
+  });
+  document.body.appendChild(overlay);
+  buildChart();
+}
+```
+
+```js
+// ── Rendu du graphe ─────────────────────────────────────────────────────
+{
+  const genreColorScale = (keys) => {
+    const ext = d3.quantize(d3.interpolateRainbow, Math.max(keys.length, 2));
+    return keys.map((g, i) => i < palette12.length ? palette12[i] : ext[i]);
+  };
+  const fillField  = decoupage  === "genre" ? "genre" : decoupage  === "langue" ? "language_code" : null;
+  const facetField = diviserPar === "genre" ? "genre" : diviserPar === "langue" ? "language_code" : null;
+
+  // ── Données agrégées selon les dimensions actives ─────────────────────
+  const groupKeys = [...new Set([fillField, facetField].filter(Boolean))];
+  const data = groupKeys.length === 2
+    ? d3.rollups(filteredData, v => d3.sum(v, d => +d.track_count),
+        d => d[fillField], d => d[facetField], d => +d.release_year
+      ).flatMap(([f, facets]) => facets.flatMap(([fac, years]) =>
+        years.map(([y, c]) => ({ [fillField]: f, [facetField]: fac, release_year: y, track_count: c }))))
+    : groupKeys.length === 1
+      ? d3.rollups(filteredData, v => d3.sum(v, d => +d.track_count),
+          d => d[groupKeys[0]], d => +d.release_year
+        ).flatMap(([k, years]) => years.map(([y, c]) => ({ [groupKeys[0]]: k, release_year: y, track_count: c })))
+      : d3.rollups(filteredData, v => d3.sum(v, d => +d.track_count),
+          d => +d.release_year
+        ).map(([y, c]) => ({ release_year: y, track_count: c }));
+
+  // ── Couleurs du fill ──────────────────────────────────────────────────
+  let colorCfg, areaFill = "#1DB954", fillOpacity = 0.6, order;
+  if (fillField === "genre") {
+    // Ordre stable basé sur les counts globaux (toutes années), pas sur la fenêtre filtrée
+    order = genreGlobalOrder.filter(g => selectedGenres.includes(g));
+    colorCfg = { domain: order, range: genreColorScale(order), legend: true, columns: 4 };
+    areaFill = "genre";
+    fillOpacity = undefined;
+  } else if (fillField === "language_code") {
+    order = topLangs.filter(l => selectedLangs.includes(l));
+    colorCfg = { domain: order, range: order.map(l => getLangColor(l)), legend: true, columns: 4, tickFormat: c => getLang(c) };
+    areaFill = "language_code";
+    fillOpacity = undefined;
+  }
+
+  // ── Facettes ──────────────────────────────────────────────────────────
+  // Remap language_code → label lisible dans les données pour l'affichage fy
+  if (facetField === "language_code") {
+    for (const d of data) d._facet = getLang(d.language_code);
+  } else if (facetField === "genre") {
+    for (const d of data) d._facet = d.genre;
+  }
+  const facetKeys = facetField ? [...new Set(data.map(d => d._facet))] : [];
+  const nFacets = facetKeys.length;
+  const plotHeight = nFacets > 1 ? nFacets * 110 + 60 : 380;
+
+  // ── Mark options ──────────────────────────────────────────────────────
+  const markOpts = {
+    x: "release_year", y: "track_count", fill: areaFill,
+    order, curve: "monotone-x", tip: true,
+    title: d => {
+      const parts = [];
+      if (d.genre) parts.push(d.genre);
+      if (d.language_code) parts.push(getLang(d.language_code));
+      return `${parts.join(" · ")} · ${d.release_year}\n${d.track_count.toLocaleString()} titres`;
+    }
+  };
+  if (fillOpacity) markOpts.fillOpacity = fillOpacity;
+  if (facetField) markOpts.fy = "_facet";
+
+  // ── Normalisation via Plot.stackY ─────────────────────────────────────
+  const stackOpts = normaliser && fillField ? { offset: "normalize" } : {};
+  const areaMark = fillField
+    ? Plot.areaY(data, Plot.stackY(stackOpts, markOpts))
+    : Plot.areaY(data, markOpts);
+
+  // ── Plot config ───────────────────────────────────────────────────────
+  const plotCfg = {
+    width, height: plotHeight, marginLeft: 55, marginBottom: 40,
+    y: {
+      label: normaliser && fillField ? "%" : "Titres",
+      grid: true,
+      tickFormat: normaliser && fillField ? d => `${Math.round(d * 100)}%` : "s"
+    },
+    marks: [areaMark, Plot.ruleY([0])]
+  };
+  if (colorCfg) plotCfg.color = colorCfg;
+  if (facetField) {
+    plotCfg.marginRight = 140;
+    plotCfg.fy = { label: null, domain: facetKeys, padding: 0.12 };
+  }
+
+  // Wrapper cliquable → popup analyse approfondie
+  const chartWrap = document.createElement("div");
+  chartWrap.className = "chart-zoomable";
+  chartWrap.title = "Cliquer pour analyser les caractéristiques audio";
+  chartWrap.appendChild(Plot.plot(plotCfg));
+  chartWrap.addEventListener("click", () => openAudioPopup({
+    decoupage, selectedGenres, selectedLangs, evoYearRange
+  }));
+  display(chartWrap);
+}
+```
+
+```js
+const yearSliderEl = yearSlider({min: 1970, max: 2025, label: "Période"});
+yearSliderEl.id = "ctrl-year-slider";
+const evoYearRange = view(yearSliderEl);
 ```
 
 *Encoding note (rough): data item = one genre-year pair (aggregated across selected languages). Mark used = stacked area, chosen to show continuous change over time while also showing part-to-whole composition at each year. Visual variables: x-position maps year, y-height/area maps track count, and color hue maps genre identity.*
+
+```js
+// ── Visite guidée : moteur + UI ─────────────────────────────────────────
+{
+  // Cleanup previous instance (Observable cell re-execution)
+  document.getElementById("story-bar")?.remove();
+  document.getElementById("story-start-wrap")?.remove();
+
+  let currentStep = -1;
+
+  // ── Apply a preset config to the controls via DOM ──────────────────────
+  function applyPreset(preset) {
+    const cfg = preset.config;
+
+    // Genres filter (null = tout sélectionner)
+    window.__setGenres?.(cfg.genres ?? window.__getAllGenres?.() ?? []);
+
+    // Langs filter (null = tout sélectionner)
+    window.__setSelectedLangs?.(cfg.langs ?? window.__getAllLangs?.() ?? []);
+
+    // Year range
+    const slider = document.getElementById("ctrl-year-slider");
+    if (slider && slider.setRange) slider.setRange(cfg.yearRange[0], cfg.yearRange[1]);
+
+    // Découpage
+    const decBtn = document.querySelector(`#ctrl-decoupage [data-value="${cfg.decoupage}"]`);
+    if (decBtn && !decBtn.classList.contains("active")) decBtn.click();
+
+    // Normaliser
+    const normWrap = document.getElementById("ctrl-normaliser");
+    if (normWrap) {
+      const isOn = normWrap.querySelector(".tab-btn.active") !== null;
+      if (isOn !== cfg.normaliser) normWrap.querySelector(".tab-btn").click();
+    }
+
+    // Diviser par (dépend du découpage, donc petit délai pour laisser le DOM se reconstruire)
+    const targetDiv = cfg.diviserPar || "aucun";
+    setTimeout(() => {
+      const divBtn = document.querySelector(`#ctrl-diviser [data-value="${targetDiv}"]`);
+      if (divBtn && !divBtn.classList.contains("active")) divBtn.click();
+    }, 80);
+  }
+
+  // ── Parse text with {overlay}...{/overlay} links ───────────────────────
+  function parseStoryText(raw, preset) {
+    const p = document.createElement("p");
+    p.className = "story-text";
+    const parts = raw.split(/\{overlay\}(.*?)\{\/overlay\}/);
+    parts.forEach((part, i) => {
+      if (i % 2 === 0) {
+        p.appendChild(document.createTextNode(part));
+      } else {
+        const link = document.createElement("span");
+        link.className = "story-overlay-link";
+        link.textContent = part;
+        link.onclick = () => openAudioPopup({
+          decoupage: preset.config.decoupage,
+          selectedGenres: genreFilterEl.value,
+          selectedLangs: window.__getSelectedLangs?.() || [],
+          evoYearRange: preset.config.yearRange
+        });
+        p.appendChild(link);
+      }
+    });
+    return p;
+  }
+
+  // ── Build the story bar ────────────────────────────────────────────────
+  const bar = document.createElement("div");
+  bar.className = "story-bar";
+  bar.id = "story-bar";
+
+  function renderStep(idx) {
+    currentStep = idx;
+    const preset = PRESETS[idx];
+
+    bar.innerHTML = "";
+    const inner = document.createElement("div");
+    inner.className = "story-bar-inner";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "story-header";
+    const stepLabel = document.createElement("span");
+    stepLabel.className = "story-step-label";
+    stepLabel.textContent = `Étape ${idx + 1} sur ${PRESETS.length}`;
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "story-close";
+    closeBtn.textContent = "✕";
+    closeBtn.title = "Quitter la visite";
+    closeBtn.onclick = () => closeStory();
+    header.append(stepLabel, closeBtn);
+
+    // Title (animated)
+    const title = document.createElement("h3");
+    title.className = "story-title";
+    title.textContent = preset.title;
+
+    // Text (animated, with possible overlay link)
+    const text = parseStoryText(preset.text, preset);
+
+    // Navigation
+    const nav = document.createElement("div");
+    nav.className = "story-nav";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "story-nav-btn";
+    prevBtn.textContent = "← Précédent";
+    prevBtn.disabled = idx === 0;
+    prevBtn.onclick = () => goToStep(idx - 1);
+
+    const dots = document.createElement("div");
+    dots.className = "story-dots";
+    PRESETS.forEach((_, i) => {
+      const dot = document.createElement("button");
+      dot.className = "story-dot" + (i === idx ? " active" : "");
+      dot.title = PRESETS[i].title;
+      dot.onclick = () => goToStep(i);
+      dots.appendChild(dot);
+    });
+
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "story-nav-btn";
+    nextBtn.textContent = idx === PRESETS.length - 1 ? "Terminer ✓" : "Suivant →";
+    nextBtn.onclick = () => {
+      if (idx === PRESETS.length - 1) closeStory();
+      else goToStep(idx + 1);
+    };
+
+    nav.append(prevBtn, dots, nextBtn);
+    inner.append(header, title, text, nav);
+    bar.appendChild(inner);
+
+    bar.classList.add("active");
+    startBtn.classList.add("hidden");
+
+    // Apply the config
+    applyPreset(preset);
+
+    // Scroll chart into view
+    document.querySelector(".chart-zoomable")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function goToStep(idx) {
+    if (idx < 0 || idx >= PRESETS.length) return;
+    renderStep(idx);
+  }
+
+  function closeStory() {
+    bar.classList.remove("active");
+    startBtn.classList.remove("hidden");
+    currentStep = -1;
+  }
+
+  // ── Start button (floating) ────────────────────────────────────────────
+  const startWrap = document.createElement("div");
+  startWrap.className = "story-start-wrap";
+  startWrap.id = "story-start-wrap";
+  const startBtn = document.createElement("button");
+  startBtn.className = "story-start-btn";
+  startBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Visite guidée`;
+  startBtn.onclick = () => goToStep(0);
+  startWrap.appendChild(startBtn);
+
+  document.body.appendChild(bar);
+  document.body.appendChild(startWrap);
+
+  // ── Keyboard navigation ────────────────────────────────────────────────
+  const keyHandler = (e) => {
+    if (currentStep < 0) return;
+    if (document.querySelector(".audio-overlay")) return; // don't interfere with modal
+    if (e.key === "ArrowRight") { e.preventDefault(); goToStep(currentStep + 1); }
+    if (e.key === "ArrowLeft")  { e.preventDefault(); goToStep(currentStep - 1); }
+    if (e.key === "Escape")     closeStory();
+  };
+  document.addEventListener("keydown", keyHandler);
+
+  // Cleanup on cell disposal
+  invalidation.then(() => {
+    bar.remove();
+    startWrap.remove();
+    document.removeEventListener("keydown", keyHandler);
+  });
+}
+```
